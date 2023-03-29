@@ -60,9 +60,23 @@ public:
     // determina si el rayo intersecta a esta esfera
     double intersect(const Ray &ray) const
     {
+        auto oc = ray.o - p;
+        // auto a = dot(ray.d, ray.d);
+        auto a = ray.d.dot(ray.d);
+        auto b = 2.0 * oc.dot(ray.d);
+        auto c = oc.dot(oc) - r * r;
+        auto discriminant = b * b - 4 * a * c;
+
         // regresar distancia si hay intersección
-        // regresar 0.0 si no hay interseccion
-        return 0.0;
+        if (discriminant > 0.0)
+        {
+            return discriminant;
+        }
+        else
+        {
+            // regresar 0.0 si no hay interseccion
+            return 0.0;
+        }
     }
 };
 
@@ -101,6 +115,8 @@ inline int toDisplayValue(const double x)
 // almacenar en id el indice de spheres[] de la esfera cuya interseccion es mas cercana
 inline bool intersect(const Ray &r, double &t, int &id)
 {
+    t = spheres[id].intersect(r);
+    printf("tamanio: %d ", t);
     return false;
 }
 
@@ -109,6 +125,11 @@ Color shade(const Ray &r)
 {
     double t;
     int id = 0;
+
+    // int iLength = sizeof(spheres) / sizeof(spheres[0]);
+
+    // printf("tamanio: %d", iLength);
+
     // determinar que esfera (id) y a que distancia (t) el rayo intersecta
     if (!intersect(r, t, id))
         return Color(); // el rayo no intersecto objeto, return Vector() == negro
