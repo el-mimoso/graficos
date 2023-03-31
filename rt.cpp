@@ -67,15 +67,13 @@ public:
         auto c = oc.dot(oc) - r * r;
         auto discriminant = b * b - 4 * a * c;
 
-        // regresar distancia si hay intersección
-        if (discriminant > 0.0)
+        if (discriminant < 0)
         {
-            return discriminant;
+            return -1.0;
         }
         else
         {
-            // regresar 0.0 si no hay interseccion
-            return 0.0;
+            return (-b - sqrt(discriminant)) / (2.0 * a);
         }
     }
 };
@@ -116,8 +114,11 @@ inline int toDisplayValue(const double x)
 inline bool intersect(const Ray &r, double &t, int &id)
 {
     t = spheres[id].intersect(r);
-    printf("tamanio: %d ", t);
-    return false;
+    if (t > 0.0 )
+    {
+        return true;
+    }
+    return false; 
 }
 
 // Calcula el valor de color para el rayo dado
@@ -132,9 +133,26 @@ Color shade(const Ray &r)
 
     // determinar que esfera (id) y a que distancia (t) el rayo intersecta
     if (!intersect(r, t, id))
-        return Color(); // el rayo no intersecto objeto, return Vector() == negro
+        // return Color(); // el rayo no intersecto objeto, return Vector() == negro
+        {
+            Ray rcopy = r;
+            Vector unit_direction = rcopy.d.normalize();
+            // unit_vector(r.direction());
+            auto t = 0.5 * (unit_direction.y + 1.0);
+            return Color(1.0, 1.0, 1.0) * (1.0 - t) +  Color(0.5, 0.7, 1.0)*t;
+        }
 
     const Sphere &obj = spheres[id];
+
+    if (t > 0.0 && id == 0 )
+    {
+            return Color(1, 0, 0);
+            // auto auxRay = r;
+            // Vector aux = auxRay + t*auxRay;
+            // Vector N = aux - Vector(0, 0, -1);
+            // N= N.normalize();
+            // return Color(N.x + 1, N.y + 1, N.z + 1)*0.5;
+    }
 
     // PROYECTO 1
     // determinar coordenadas del punto de interseccion
@@ -145,6 +163,7 @@ Color shade(const Ray &r)
 
     // determinar el color que se regresara
     Color colorValue;
+    // colorValue = Color(1,0,0);
 
     return colorValue;
 }
