@@ -4,6 +4,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <omp.h>
+#include <utility>
+using namespace std;
 
 class Vector
 {
@@ -61,11 +63,10 @@ public:
     double intersect(const Ray &ray) const
     {
         auto oc = ray.o - p;
-        // auto a = dot(ray.d, ray.d);
         auto a = ray.d.dot(ray.d);
-        auto b = 2.0 * oc.dot(ray.d);
+        auto b = oc.dot(ray.d);
         auto c = oc.dot(oc) - r * r;
-        auto discriminant = b * b - 4 * a * c;
+        auto discriminant = b * b - a * c;
 
         if (discriminant < 0)
         {
@@ -73,7 +74,7 @@ public:
         }
         else
         {
-            return (-b - sqrt(discriminant)) / (2.0 * a);
+            return (-b - sqrt(discriminant)) / a;
         }
     }
 };
@@ -89,9 +90,11 @@ Sphere spheres[] = {
     Sphere(16.5, Point(23, -24.3, -3.6), Color(.999, .999, .999)),   // esfera abajo-der
     Sphere(10.5, Point(0, 24.3, 0), Color(1, 1, 1))                  // esfera arriba
 };
+const int spheresLength = sizeof(spheres) / sizeof(spheres[0]);
 
 // limita el valor de x a [0,1]
-inline double clamp(const double x)
+inline double
+clamp(const double x)
 {
     if (x < 0.0)
         return 0.0;
@@ -113,12 +116,33 @@ inline int toDisplayValue(const double x)
 // almacenar en id el indice de spheres[] de la esfera cuya interseccion es mas cercana
 inline bool intersect(const Ray &r, double &t, int &id)
 {
-    t = spheres[id].intersect(r);
-    if (t > 0.0 )
+    pair<int, int> spheresData[spheresLength];
+
+    for (int i = 0; i < spheresLength; i++)
+    {
+        spheresData[i].first = i;
+        spheresData[i].second = spheres[i].intersect(r);
+        if (spheresData[i].second > 0)
+        {
+            t = spheres[i].intersect(r);
+            id = i;
+        }
+    }
+
+    for (int i = 0; i < spheresLength; i++)
+    {
+        if (spheresData[i].second < t && spheresData[i].second > 0)
+        {
+            t = spheresData[i].second;
+            id = spheresData[i].first;
+        }
+    }
+
+    if (t > 0)
     {
         return true;
     }
-    return false; 
+    return false;
 }
 
 // Calcula el valor de color para el rayo dado
@@ -126,45 +150,23 @@ Color shade(const Ray &r)
 {
     double t;
     int id = 0;
-
-    // int iLength = sizeof(spheres) / sizeof(spheres[0]);
-
-    // printf("tamanio: %d", iLength);
-
     // determinar que esfera (id) y a que distancia (t) el rayo intersecta
     if (!intersect(r, t, id))
-        // return Color(); // el rayo no intersecto objeto, return Vector() == negro
-        {
-            Ray rcopy = r;
-            Vector unit_direction = rcopy.d.normalize();
-            // unit_vector(r.direction());
-            auto t = 0.5 * (unit_direction.y + 1.0);
-            return Color(1.0, 1.0, 1.0) * (1.0 - t) +  Color(0.5, 0.7, 1.0)*t;
-        }
+        return Color(); // el rayo no intersecto objeto, return Vector() == negro
 
     const Sphere &obj = spheres[id];
-
-    if (t > 0.0 && id == 0 )
-    {
-            return Color(1, 0, 0);
-            // auto auxRay = r;
-            // Vector aux = auxRay + t*auxRay;
-            // Vector N = aux - Vector(0, 0, -1);
-            // N= N.normalize();
-            // return Color(N.x + 1, N.y + 1, N.z + 1)*0.5;
-    }
 
     // PROYECTO 1
     // determinar coordenadas del punto de interseccion
     Point x;
 
     // determinar la dirección normal en el punto de interseccion
-    Vector n;
+    Vector n = (r.o + r.d * t - Vector(0, 0, -1)).normalize();
 
     // determinar el color que se regresara
     Color colorValue;
-    // colorValue = Color(1,0,0);
-
+    colorValue = obj.c;
+    // colorValue = Color(n.x+1 , n.y +1, n.z +1)*.5;
     return colorValue;
 }
 
