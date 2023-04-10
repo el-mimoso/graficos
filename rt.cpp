@@ -58,16 +58,18 @@ public:
 
     Sphere(double r_, Point p_, Color c_) : r(r_), p(p_), c(c_) {}
 
-    // PROYECTO 1
     // determina si el rayo intersecta a esta esfera
+    // -1 si no toca, t de lo contrario.
     double intersect(const Ray &ray) const
     {
+        // se asignan los valores de la formula general cuadratica "la del chicharronero"
         auto oc = ray.o - p;
         auto a = ray.d.dot(ray.d);
         auto b = oc.dot(ray.d);
         auto c = oc.dot(oc) - r * r;
         auto discriminant = b * b - a * c;
-
+        // solo si el valor de discriminant es positivo hacemos la raiz cuadrada para ahorrar tiempo de computo
+        // de otra forma retorna -1
         if (discriminant < 0)
         {
             return -1.0;
@@ -109,17 +111,18 @@ inline int toDisplayValue(const double x)
     return int(pow(clamp(x), 1.0 / 2.2) * 255 + .5);
 }
 
-// PROYECTO 1
-// calcular la intersección del rayo r con todas las esferas
+// calcula la intersección del rayo r con todas las esferas
 // regresar true si hubo una intersección, falso de otro modo
 // almacenar en t la distancia sobre el rayo en que sucede la interseccion
 // almacenar en id el indice de spheres[] de la esfera cuya interseccion es mas cercana
 inline bool intersect(const Ray &r, double &t, int &id)
 {
+    // arreglo de pares donde almacenamos la id y la distancia del rayo
     pair<int, int> spheresData[spheresLength];
 
     for (int i = 0; i < spheresLength; i++)
     {
+        // asignación de valores al par
         spheresData[i].first = i;
         spheresData[i].second = spheres[i].intersect(r);
         if (spheresData[i].second > 0)
@@ -128,16 +131,16 @@ inline bool intersect(const Ray &r, double &t, int &id)
             id = i;
         }
     }
-
+    // ordenamiento de pares por la menor distancia
     for (int i = 0; i < spheresLength; i++)
     {
         if (spheresData[i].second < t && spheresData[i].second > 0)
         {
+            // actualizamos valores de t e id solo si el valor almacenado en el par es menor al valor de t y que sea positivo
             t = spheresData[i].second;
             id = spheresData[i].first;
         }
     }
-
     if (t > 0)
     {
         return true;
@@ -150,23 +153,31 @@ Color shade(const Ray &r)
 {
     double t;
     int id = 0;
-    // determinar que esfera (id) y a que distancia (t) el rayo intersecta
     if (!intersect(r, t, id))
-        return Color(); // el rayo no intersecto objeto, return Vector() == negro
+        // el rayo no intersecto objeto, return Vector() == negro
+        return Color();
 
     const Sphere &obj = spheres[id];
 
     // PROYECTO 1
     // determinar coordenadas del punto de interseccion
-    Point x;
+    Point x = r.o + r.d * t;
 
     // determinar la dirección normal en el punto de interseccion
-    Vector n = (r.o + r.d * t - Vector(0, 0, -1)).normalize();
+    Vector n = (x - obj.p).normalize();
 
     // determinar el color que se regresara
     Color colorValue;
-    colorValue = obj.c;
-    // colorValue = Color(n.x+1 , n.y +1, n.z +1)*.5;
+
+    // obtener solo el color de los objetos
+    //  colorValue = obj.c;
+
+    // color de valores de normales en punto de interseccion
+    // colorValue = Color(n.x + 1, n.y + 1, n.z + 1) * .5;
+
+    // color(grises) de acuerdo a la profundidad
+    colorValue = Color(0.002, 0.002, 0.002) * t;
+
     return colorValue;
 }
 
@@ -186,34 +197,39 @@ int main(int argc, char *argv[])
 
     // PROYECTO 1
     // usar openmp para paralelizar el ciclo: cada hilo computara un renglon (ciclo interior),
-    for (int y = 0; y < h; y++)
+// se define bloque paralelo
+#pragma omp parallel
     {
-        // recorre todos los pixeles de la imagen
-        fprintf(stderr, "\r%5.2f%%", 100. * y / (h - 1));
-        for (int x = 0; x < w; x++)
+        // siguiente bucle for se ejecuta de manera paralela,
+        // asignando un chunk a cada nucleo del CPU disponible en ese momento
+#pragma omp for schedule(dynamic, 1)
+        for (int y = 0; y < h; y++)
         {
-            int idx = (h - y - 1) * w + x; // index en 1D para una imagen 2D x,y son invertidos
-            Color pixelValue = Color();    // pixelValue en negro por ahora
-            // para el pixel actual, computar la dirección que un rayo debe tener
-            Vector cameraRayDir = cx * (double(x) / w - .5) + cy * (double(y) / h - .5) + camera.d;
+            // recorre todos los pixeles de la imagen
+            fprintf(stderr, "\r%5.2f%%", 100. * y / (h - 1));
+            for (int x = 0; x < w; x++)
+            {
+                int idx = (h - y - 1) * w + x; // index en 1D para una imagen 2D x,y son invertidos
+                Color pixelValue = Color();    // pixelValue en negro por ahora
+                // para el pixel actual, computar la dirección que un rayo debe tener
+                Vector cameraRayDir = cx * (double(x) / w - .5) + cy * (double(y) / h - .5) + camera.d;
 
-            // computar el color del pixel para el punto que intersectó el rayo desde la camara
-            pixelValue = shade(Ray(camera.o, cameraRayDir.normalize()));
+                // computar el color del pixel para el punto que intersectó el rayo desde la camara
+                pixelValue = shade(Ray(camera.o, cameraRayDir.normalize()));
 
-            // limitar los tres valores de color del pixel a [0,1]
-            pixelColors[idx] = Color(clamp(pixelValue.x), clamp(pixelValue.y), clamp(pixelValue.z));
+                // limitar los tres valores de color del pixel a [0,1]
+                pixelColors[idx] = Color(clamp(pixelValue.x), clamp(pixelValue.y), clamp(pixelValue.z));
+            }
         }
     }
 
     fprintf(stderr, "\n");
 
-    // PROYECTO 1
-    // Investigar formato ppm
     FILE *f = fopen("image.ppm", "w");
-    // escribe cabecera del archivo ppm, ancho, alto y valor maximo de color
     fprintf(f, "P3\n%d %d\n%d\n", w, h, 255);
     for (int p = 0; p < w * h; p++)
-    { // escribe todos los valores de los pixeles
+    {
+        // escribe todos los valores de los pixeles
         fprintf(f, "%d %d %d ", toDisplayValue(pixelColors[p].x), toDisplayValue(pixelColors[p].y),
                 toDisplayValue(pixelColors[p].z));
     }
