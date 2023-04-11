@@ -111,6 +111,18 @@ inline int toDisplayValue(const double x)
     return int(pow(clamp(x), 1.0 / 2.2) * 255 + .5);
 }
 
+inline double random_double()
+{
+    // Returns a random real in [0,1).
+    return rand() / (RAND_MAX + 1.0);
+}
+
+inline double random_double(double min, double max)
+{
+    // Returns a random real in [min,max).
+    return min + (max - min) * random_double();
+}
+
 // calcula la intersección del rayo r con todas las esferas
 // regresar true si hubo una intersección, falso de otro modo
 // almacenar en t la distancia sobre el rayo en que sucede la interseccion
@@ -170,13 +182,13 @@ Color shade(const Ray &r)
     Color colorValue;
 
     // obtener solo el color de los objetos
-    //  colorValue = obj.c;
+    // colorValue = obj.c;
 
     // color de valores de normales en punto de interseccion
-    // colorValue = Color(n.x + 1, n.y + 1, n.z + 1) * .5;
+    colorValue = Color(n.x + 1, n.y + 1, n.z + 1) * .5;
 
     // color(grises) de acuerdo a la profundidad
-    colorValue = Color(0.002, 0.002, 0.002) * t;
+    // colorValue = Color(0.002, 0.002, 0.002) * t;
 
     return colorValue;
 }
@@ -184,6 +196,7 @@ Color shade(const Ray &r)
 int main(int argc, char *argv[])
 {
     int w = 1024, h = 768; // image resolution
+    const int pixel_samples = 100;
 
     // fija la posicion de la camara y la dirección en que mira
     Ray camera(Point(0, 11.2, 214), Vector(0, -0.042612, -1).normalize());
@@ -211,11 +224,21 @@ int main(int argc, char *argv[])
             {
                 int idx = (h - y - 1) * w + x; // index en 1D para una imagen 2D x,y son invertidos
                 Color pixelValue = Color();    // pixelValue en negro por ahora
+                // ciclo de muestreo para antiAlias.
+                for (int i = 0; i < pixel_samples; i++)
+                {
+                    auto u = cx * (double(x + random_double()) / w - 0.5);
+                    auto v = cy * (double(y + random_double()) / h - 0.5);
+                    Vector cameraRayDir = u + v + camera.d;
+                    // Vector cameraRayDir = cx * (double(x + random_double()) / w - .5) + cy * (double(y + random_double()) / h - .5) + camera.d;
+                    pixelValue = pixelValue + shade(Ray(camera.o, cameraRayDir.normalize()));
+                }
+                auto scale = 1.0 / pixel_samples;
+                pixelValue = pixelValue * scale;
+
                 // para el pixel actual, computar la dirección que un rayo debe tener
-                Vector cameraRayDir = cx * (double(x) / w - .5) + cy * (double(y) / h - .5) + camera.d;
 
                 // computar el color del pixel para el punto que intersectó el rayo desde la camara
-                pixelValue = shade(Ray(camera.o, cameraRayDir.normalize()));
 
                 // limitar los tres valores de color del pixel a [0,1]
                 pixelColors[idx] = Color(clamp(pixelValue.x), clamp(pixelValue.y), clamp(pixelValue.z));
