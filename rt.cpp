@@ -7,6 +7,8 @@
 #include <utility>
 using namespace std;
 
+// TODO: pasar las clases a su propio archivo.
+
 class Vector
 {
 public:
@@ -94,6 +96,8 @@ Sphere spheres[] = {
 };
 const int spheresLength = sizeof(spheres) / sizeof(spheres[0]);
 
+
+// TODO: pasar las siguientes funciones utiles a su propio archivo.
 // limita el valor de x a [0,1]
 inline double
 clamp(const double x)
@@ -111,15 +115,15 @@ inline int toDisplayValue(const double x)
     return int(pow(clamp(x), 1.0 / 2.2) * 255 + .5);
 }
 
+// Returna real aleatorio en el rango  [0,1).
 inline double random_double()
 {
-    // Returns a random real in [0,1).
     return rand() / (RAND_MAX + 1.0);
 }
 
+// Returna real aleatorio en el rango [min,max).
 inline double random_double(double min, double max)
 {
-    // Returns a random real in [min,max).
     return min + (max - min) * random_double();
 }
 
@@ -171,7 +175,6 @@ Color shade(const Ray &r)
 
     const Sphere &obj = spheres[id];
 
-    // PROYECTO 1
     // determinar coordenadas del punto de interseccion
     Point x = r.o + r.d * t;
 
@@ -181,14 +184,8 @@ Color shade(const Ray &r)
     // determinar el color que se regresara
     Color colorValue;
 
-    // obtener solo el color de los objetos
-    // colorValue = obj.c;
-
     // color de valores de normales en punto de interseccion
     colorValue = Color(n.x + 1, n.y + 1, n.z + 1) * .5;
-
-    // color(grises) de acuerdo a la profundidad
-    // colorValue = Color(0.002, 0.002, 0.002) * t;
 
     return colorValue;
 }
@@ -196,6 +193,7 @@ Color shade(const Ray &r)
 int main(int argc, char *argv[])
 {
     int w = 1024, h = 768; // image resolution
+    // Numero de muestras por pixel.
     const int pixel_samples = 100;
 
     // fija la posicion de la camara y la dirección en que mira
@@ -208,8 +206,6 @@ int main(int argc, char *argv[])
     // auxiliar para valor de pixel y matriz para almacenar la imagen
     Color *pixelColors = new Color[w * h];
 
-    // PROYECTO 1
-    // usar openmp para paralelizar el ciclo: cada hilo computara un renglon (ciclo interior),
 // se define bloque paralelo
 #pragma omp parallel
     {
@@ -227,18 +223,17 @@ int main(int argc, char *argv[])
                 // ciclo de muestreo para antiAlias.
                 for (int i = 0; i < pixel_samples; i++)
                 {
+                    // se le agrega un valor aleatorio a cada pixel en X Y para muestrear mas puntos, no solo el centro del pixel
                     auto u = cx * (double(x + random_double()) / w - 0.5);
                     auto v = cy * (double(y + random_double()) / h - 0.5);
+                    // se lanza rayo con las variaciones en direccion 
                     Vector cameraRayDir = u + v + camera.d;
-                    // Vector cameraRayDir = cx * (double(x + random_double()) / w - .5) + cy * (double(y + random_double()) / h - .5) + camera.d;
+                    // incrementamos valores de ese pixel
                     pixelValue = pixelValue + shade(Ray(camera.o, cameraRayDir.normalize()));
                 }
+                // promedio y escalado del valor del pixel
                 auto scale = 1.0 / pixel_samples;
                 pixelValue = pixelValue * scale;
-
-                // para el pixel actual, computar la dirección que un rayo debe tener
-
-                // computar el color del pixel para el punto que intersectó el rayo desde la camara
 
                 // limitar los tres valores de color del pixel a [0,1]
                 pixelColors[idx] = Color(clamp(pixelValue.x), clamp(pixelValue.y), clamp(pixelValue.z));
