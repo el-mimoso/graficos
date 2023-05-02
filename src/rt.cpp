@@ -1,5 +1,6 @@
 // rt: un lanzador de rayos minimalista
 // g++ -O3 -fopenmp rt.cpp -o rt
+#include "vec.h"
 #include <math.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -9,46 +10,17 @@ using namespace std;
 
 // TODO: pasar las clases a su propio archivo.
 
-class Vector
-{
-public:
-    double x, y, z; // coordenadas x,y,z
-
-    // Constructor del vector, parametros por default en cero
-    Vector(double x_ = 0, double y_ = 0, double z_ = 0)
-    {
-        x = x_;
-        y = y_;
-        z = z_;
-    }
-
-    // operador para suma y resta de vectores
-    Vector operator+(const Vector &b) const { return Vector(x + b.x, y + b.y, z + b.z); }
-    Vector operator-(const Vector &b) const { return Vector(x - b.x, y - b.y, z - b.z); }
-    // operator multiplicacion vector y escalar
-    Vector operator*(double b) const { return Vector(x * b, y * b, z * b); }
-
-    // operator % para producto cruz
-    Vector operator%(Vector &b) { return Vector(y * b.z - z * b.y, z * b.x - x * b.z, x * b.y - y * b.x); }
-
-    // producto punto con vector b
-    double dot(const Vector &b) const { return x * b.x + y * b.y + z * b.z; }
-
-    // producto elemento a elemento (Hadamard product)
-    Vector mult(const Vector &b) const { return Vector(x * b.x, y * b.y, z * b.z); }
-
-    // normalizar vector
-    Vector &normalize() { return *this = *this * (1.0 / sqrt(x * x + y * y + z * z)); }
-};
-typedef Vector Point;
-typedef Vector Color;
-
 class Ray
 {
 public:
     Point o;
     Vector d;                                  // origen y direcccion del rayo
     Ray(Point o_, Vector d_) : o(o_), d(d_) {} // constructor
+
+    Point at(double t) const
+    {
+        return o + d * t;
+    }
 };
 
 class Sphere
@@ -57,8 +29,9 @@ public:
     double r; // radio de la esfera
     Point p;  // posicion
     Color c;  // color
+    Color l;  // luz
 
-    Sphere(double r_, Point p_, Color c_) : r(r_), p(p_), c(c_) {}
+    Sphere(double r_, Point p_, Color c_, Color l_) : r(r_), p(p_), c(c_), l(l_) {}
 
     // determina si el rayo intersecta a esta esfera
     // -1 si no toca, t de lo contrario.
@@ -84,18 +57,18 @@ public:
 };
 
 Sphere spheres[] = {
-    // Escena: radio, posicion, color
-    Sphere(1e5, Point(-1e5 - 49, 0, 0), Color(.75, .25, .25)),       // pared izq
-    Sphere(1e5, Point(1e5 + 49, 0, 0), Color(.25, .25, .75)),        // pared der
-    Sphere(1e5, Point(0, 0, -1e5 - 81.6), Color(.75, .75, .75)),     // pared detras
-    Sphere(1e5, Point(0, -1e5 - 40.8, 0), Color(.75, .75, .75)),     // suelo
-    Sphere(1e5, Point(0, 1e5 + 40.8, 0), Color(.75, .75, .75)),      // techo
-    Sphere(16.5, Point(-23, -24.3, -34.6), Color(.999, .999, .999)), // esfera abajo-izq
-    Sphere(16.5, Point(23, -24.3, -3.6), Color(.999, .999, .999)),   // esfera abajo-der
-    Sphere(10.5, Point(0, 24.3, 0), Color(1, 1, 1))                  // esfera arriba
+    // Escena: radio, posicion, color, luz
+    Sphere(1e5, Point(-1e5 - 49, 0, 0), Color(.75, .25, .25), Color()),   // pared izq
+    Sphere(1e5, Point(1e5 + 49, 0, 0), Color(.25, .25, .75), Color()),    // pared der
+    Sphere(1e5, Point(0, 0, -1e5 - 81.6), Color(.25, .75, .25), Color()), // pared detras
+    Sphere(1e5, Point(0, -1e5 - 40.8, 0), Color(.25, .75, .75), Color()), // suelo
+    Sphere(1e5, Point(0, 1e5 + 40.8, 0), Color(.75, .75, .25), Color()),  // techo
+    Sphere(16.5, Point(-23, -24.3, -34.6), Color(.2, .3, .4), Color()),   // esfera abajo-izq
+    Sphere(16.5, Point(23, -24.3, -3.6), Color(.4, .3, .2), Color()),     // esfera abajo-der
+    Sphere(10.5, Point(0, 24.3, 0), Color(1, 1, 1), Color(10, 10, 10))    // esfera arriba
+    // Sphere(0, Point(0, 24.3, 0), Color(1, 1, 1), Color(10, 10, 10)) // esfera arriba
 };
 const int spheresLength = sizeof(spheres) / sizeof(spheres[0]);
-
 
 // TODO: pasar las siguientes funciones utiles a su propio archivo.
 // limita el valor de x a [0,1]
@@ -115,6 +88,26 @@ inline int toDisplayValue(const double x)
     return int(pow(clamp(x), 1.0 / 2.2) * 255 + .5);
 }
 
+Vector cross(Vector a, Vector b)
+{
+    return a % b;
+}
+
+void coordinateSystem(const Vector &n, Vector &s, Vector &t)
+{
+    if (std::abs(n.x) > std::abs(n.y))
+    {
+        float invLen = 1.0f / std::sqrt(n.x * n.x + n.z * n.z);
+        t = Vector(n.z * invLen, 0.0f, -n.x * invLen);
+    }
+    else
+    {
+        float invLen = 1.0f / std::sqrt(n.y * n.y + n.z * n.z);
+        t = Vector(0.0f, n.z * invLen, -n.y * invLen);
+    }
+    s = cross(t, n);
+}
+
 // Returna real aleatorio en el rango  [0,1).
 inline double random_double()
 {
@@ -126,6 +119,32 @@ inline double random_double(double min, double max)
 {
     return min + (max - min) * random_double();
 }
+
+Vector random_in_unit_sphere()
+{
+    while (true)
+    {
+        Vector p = Vector(random_double(-1, 1), random_double(-1, 1), random_double(-1, 1));
+        if (p.dot(p) >= 1)
+            continue;
+        return p;
+    }
+}
+Vector random_unit_vector()
+{
+    return random_in_unit_sphere().normalize();
+}
+
+Vector random_in_hemisphere(const Vector &normal)
+{
+    Vector in_unit_sphere = random_in_unit_sphere();
+    if (in_unit_sphere.dot(normal) > 0.0) // In the same hemisphere as the normal
+        return in_unit_sphere;
+    else
+        return in_unit_sphere * -1;
+}
+
+const double pi = 3.1415926535897932385;
 
 // calcula la intersección del rayo r con todas las esferas
 // regresar true si hubo una intersección, falso de otro modo
@@ -165,36 +184,56 @@ inline bool intersect(const Ray &r, double &t, int &id)
 }
 
 // Calcula el valor de color para el rayo dado
-Color shade(const Ray &r)
+Color shade(const Ray &r, int depth)
 {
     double t;
     int id = 0;
+
+    if (depth <= 0)
+        return Color(0, 0, 0);
+
     if (!intersect(r, t, id))
         // el rayo no intersecto objeto, return Vector() == negro
         return Color();
 
     const Sphere &obj = spheres[id];
 
+    if (obj.l.x * obj.l.x + obj.l.y * obj.l.y + obj.l.z * obj.l.z > 0)
+    {
+        return obj.l;
+    }
+
     // determinar coordenadas del punto de interseccion
-    Point x = r.o + r.d * t;
+    Point x = r.at(t);
 
     // determinar la dirección normal en el punto de interseccion
     Vector n = (x - obj.p).normalize();
 
-    // determinar el color que se regresara
-    Color colorValue;
+    // const double p = .25 / pi;
+    const double p = .5 / pi;
 
-    // color de valores de normales en punto de interseccion
-    colorValue = Color(n.x + 1, n.y + 1, n.z + 1) * .5;
+    // Point target = x + n + random_unit_vector();
+    Point target = x + random_in_hemisphere(n);
+    Ray newRay(x, target - x);
 
+    double cos_theta = newRay.d.dot(n);
+
+    Color BRDF = obj.c * (1 / pi);
+    Color emittance = obj.l;
+
+    Color incomingColor = shade(newRay, depth - 1);
+
+    Color colorValue = emittance + (incomingColor.mult(BRDF) * cos_theta) * (1 / p);
     return colorValue;
+    // return Color(n.x + 1, n.y + 1, n.z + 1) * .5;
 }
 
 int main(int argc, char *argv[])
 {
     int w = 1024, h = 768; // image resolution
     // Numero de muestras por pixel.
-    const int pixel_samples = 100;
+    const int pixel_samples = 32;
+    const int depth = 32;
 
     // fija la posicion de la camara y la dirección en que mira
     Ray camera(Point(0, 11.2, 214), Vector(0, -0.042612, -1).normalize());
@@ -223,13 +262,15 @@ int main(int argc, char *argv[])
                 // ciclo de muestreo para antiAlias.
                 for (int i = 0; i < pixel_samples; i++)
                 {
+                    auto u = cx * (double(x) / w - .5);
+                    auto v = cy * (double(y) / h - .5);
                     // se le agrega un valor aleatorio a cada pixel en X Y para muestrear mas puntos, no solo el centro del pixel
-                    auto u = cx * (double(x + random_double()) / w - 0.5);
-                    auto v = cy * (double(y + random_double()) / h - 0.5);
-                    // se lanza rayo con las variaciones en direccion 
+                    // auto u = cx * (double(x + random_double()) / w - 0.5);
+                    // auto v = cy * (double(y + random_double()) / h - 0.5);
+                    // se lanza rayo con las variaciones en direccion
                     Vector cameraRayDir = u + v + camera.d;
                     // incrementamos valores de ese pixel
-                    pixelValue = pixelValue + shade(Ray(camera.o, cameraRayDir.normalize()));
+                    pixelValue = pixelValue + shade(Ray(camera.o, cameraRayDir.normalize()), depth);
                 }
                 // promedio y escalado del valor del pixel
                 auto scale = 1.0 / pixel_samples;

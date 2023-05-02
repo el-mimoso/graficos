@@ -10,7 +10,7 @@ int main(void)
     {
         int my_rank = omp_get_thread_num();
         int num_threads = omp_get_num_threads();
-#pragma omp for schedule(dynamic, 3)
+        #pragma omp for schedule(dynamic, 3)
         for (int i = 0; i < t; i++)
         {
             for (int j = 0; j < t; j++)
