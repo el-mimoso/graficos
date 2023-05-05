@@ -1,4 +1,7 @@
+#pragma once
 #include <math.h>
+#ifndef VECTOR_H
+#define VECTOR_H
 
 class Vector
 {
@@ -34,3 +37,4 @@ public:
 };
 typedef Vector Point;
 typedef Vector Color;
+#endif
