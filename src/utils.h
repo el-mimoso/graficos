@@ -97,9 +97,9 @@ inline Vector random_cosine_hemisphere(double &theta)
 
     auto phi = 2 * pi * r1;
 
-    auto z = sqrt(1 - r2);
     auto x = cos(phi) * sqrt(r2);
     auto y = sin(phi) * sqrt(r2);
+    auto z = sqrt(1 - r2);
 
     return Vector(x, y, z);
 }

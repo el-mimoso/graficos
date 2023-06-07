@@ -21,8 +21,9 @@ Sphere spheres[] = {
     Sphere(1e5, Point(0, 1e5 + 40.8, 0), Color(.75, .75, .25), Color()),  // techo
     Sphere(16.5, Point(-23, -24.3, -34.6), Color(.2, .3, .4), Color()),   // esfera abajo-izq
     Sphere(16.5, Point(23, -24.3, -3.6), Color(.4, .3, .2), Color()),     // esfera abajo-der
-    Sphere(10.5, Point(0, 24.3, 0), Color(1, 1, 1), Color(10, 10, 10))    // esfera arriba
-    // Sphere(0, Point(0, 24.3, 0), Color(1, 1, 1), Color(10, 10, 10)) // esfera arriba
+    // Sphere(10.5, Point(0, 24.3, 0), Color(1, 1, 1), Color(10, 10, 10))    // esfera arriba
+    Sphere(0, Point(0, 24.3, 0), Color(1, 1, 1), Color(5555, 5555, 5555)) // esfera arriba
+    // sleek daft punk reference ヾ(⌐■_■)//ノ♪ 
 };
 
 const int spheresLength = sizeof(spheres) / sizeof(spheres[0]);
@@ -50,7 +51,7 @@ inline bool intersect(const Ray &r, double &t, int &id)
     // ordenamiento de pares por la menor distancia
     for (int i = 0; i < spheresLength; i++)
     {
-        if (t > spheresData[i].second && spheresData[i].second > 0.01)
+        if (t > spheresData[i].second && spheresData[i].second > 0.0001)
         {
             // actualizamos valores de t e id solo si el valor almacenado en el par es menor al valor de t y que sea positivo
             id = spheresData[i].first;
@@ -64,6 +65,19 @@ inline bool intersect(const Ray &r, double &t, int &id)
     return false;
 }
 
+// calcula el indice de la esfera que es luz
+int getLightIndx()
+{
+    for (int i = 0; i < spheresLength; i++)
+    {
+        if (spheres[i].l.x > 0 || spheres[i].l.y > 0 || spheres[i].l.z > 0 && spheres[i].r == 0)
+        {
+            return i;
+        }
+    }
+    return -1;
+}
+
 // Calcula el valor de color para el rayo dado, seleccionar muestreo aleatorio
 // 0 para esfera unitaria
 // 1 para esfera hemisferica
@@ -74,6 +88,11 @@ Color shade(const Ray &r, int depth, int mode)
     double t;
     int id = 0;
 
+    int lightIndx = getLightIndx(); // indice de la esfera que es luz puntual
+    double tlight;
+
+    // distancia de la luz
+
     if (depth <= 0)
         return Color(0, 0, 0);
 
@@ -83,55 +102,49 @@ Color shade(const Ray &r, int depth, int mode)
 
     const Sphere &obj = spheres[id];
 
+    const Sphere &light = spheres[lightIndx];
+
     // determinar coordenadas del punto de interseccion
     Point x = r.o + r.d * t;
+    // printf("T  %g\n", t);
 
     // determinar la dirección normal en el punto de interseccion
     Vector n = (x - obj.p).normalize();
 
-    Point target;
-    double p;
-    double tetha;
+    // se lanza un rayo desde la fuente de luz hacia el punto de interseccion
+    Ray newRay(light.p, x - light.p);
 
-    switch (mode)
+    Color emittance = light.l;
+
+    double auxDistance = sqrt(newRay.d.dot(newRay.d));
+
+    lightIndx = 0;
+    // determinar si hay linea de vista entre la luz y la esfera
+    if (intersect(newRay, tlight, lightIndx))
     {
-    case 1:
-        target = random_in_hemisphere();
-        p = .5 / pi;
-        break;
 
-    case 2:
-        target = random_cosine_hemisphere(tetha);
-        p = (1 / pi) * cos(tetha);
-        break;
-
-    // case:0
-    default:
-        target = random_in_sphere();
-        p = 1 / (4 * pi);
-        break;
+        Color xprim = newRay.o + newRay.d * tlight;
+        //revisamos que sea el mismo objeto con el que intersectamos. 
+        if (id == lightIndx)
+        {
+        
+            double xpNormSqr = xprim.dot(xprim);
+            emittance = emittance * (1 / xpNormSqr);
+        }
+        else
+            emittance = Color();
     }
+    else
+        emittance = Color();
 
-    // se arma el sistema de coordenadas
-    Vector s;
-    Vector ta;
-    coordinateSystem(n, s, ta);
-
-    Point dir(
-        Point(s.x, ta.x, n.x).dot(target),
-        Point(s.y, ta.y, n.y).dot(target),
-        Point(s.z, ta.z, n.z).dot(target));
-
-    Ray newRay(x, dir);
-
-    double cos_theta = newRay.d.dot(n);
+    Vector lightD = newRay.d.normalize();
+    double cos_theta = n.dot(lightD);
 
     Color BRDF = obj.c * (1 / pi);
-    Color emittance = obj.l;
 
-    Color incomingColor = shade(newRay, depth - 1, mode);
+    // Color incomingColor = shade(newRay, depth - 1, mode);
 
-    Color colorValue = emittance + (incomingColor.mult(BRDF) * cos_theta) * (p);
+    Color colorValue = emittance.mult(BRDF * (-cos_theta));
     return colorValue;
 }
 
@@ -140,7 +153,7 @@ int main(int argc, char *argv[])
 {
     int w = 1024, h = 768; // image resolution
     // Numero de muestras por pixel.
-    const int pixel_samples = 20;
+    const int pixel_samples = 32;
     // Numero de rebotes.
     const int depth = 2;
     // Modo de muestreo. 0 para esfera unitaria, 1 para esfera hemisferica, 2 para coseno hemisferica
@@ -185,8 +198,8 @@ int main(int argc, char *argv[])
                     pixelValue = pixelValue + shade(Ray(camera.o, cameraRayDir.normalize()), depth, mode);
                 }
                 // promedio y escalado del valor del pixel
-                // auto scale = 1.0 / pixel_samples;
-                // pixelValue = pixelValue * scale;
+                auto scale = 1.0 / pixel_samples;
+                pixelValue = pixelValue * scale;
 
                 // limitar los tres valores de color del pixel a [0,1]
                 pixelColors[idx] = Color(clamp(pixelValue.x), clamp(pixelValue.y), clamp(pixelValue.z));

@@ -1,4 +1,4 @@
-CPP=g++
+CPP=g++-12
 CPPFLAGS=-O3 -fopenmp 
 
 default: rt

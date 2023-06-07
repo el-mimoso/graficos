@@ -1,5 +1,6 @@
 #pragma once
 #include <math.h>
+#include <cmath>
 #ifndef VECTOR_H
 #define VECTOR_H
 

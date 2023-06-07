@@ -31,7 +31,30 @@ public:
         }
         else
         {
-            return (-b - sqrt(discriminant)) / a;
+            double tplus = (-b + sqrt(discriminant)) / a;
+            double tminus = (-b - sqrt(discriminant)) / a;
+            double t;
+
+            // ambos positivos
+            if (tminus > 0 && tplus > 0)
+            {
+                t = std::min(tminus, tplus);
+            }
+            // tminus positivo, tplus negativo
+            else if (tminus > 0 && tplus < 0)
+            {
+                t = tminus;
+            }
+            // tminus negativo, tplus positivo
+            else if (tminus < 0 && tplus > 0)
+            {
+                t = tplus;
+            }
+            else
+            {
+                t = 0;
+            }
+            return t;
         }
     }
 };
