@@ -3,3 +3,6 @@ book/*
 intro/*
 **/image.ppm
 src/rt
+**.zip
+.ds_store
+rt
