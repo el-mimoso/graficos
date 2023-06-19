@@ -90,19 +90,19 @@ Color shade(const Ray &r, int depth, int mode)
 
     int lightIndx = getLightIndx(); // indice de la esfera que es luz puntual
     double tlight;
+    // int lightIndx = 0;
 
     // distancia de la luz
 
-    if (depth <= 0)
-        return Color(0, 0, 0);
+    // if (depth <= 0)
+    //     return Color(0, 0, 0);
 
     if (!intersect(r, t, id))
         // el rayo no intersecto objeto, return Vector() == negro
         return Color(0, 0, 0);
 
     const Sphere &obj = spheres[id];
-
-    const Sphere &light = spheres[lightIndx];
+    const Sphere light = spheres[lightIndx];
 
     // determinar coordenadas del punto de interseccion
     Point x = r.o + r.d * t;
@@ -112,23 +112,25 @@ Color shade(const Ray &r, int depth, int mode)
     Vector n = (x - obj.p).normalize();
 
     // se lanza un rayo desde la fuente de luz hacia el punto de interseccion
-    Ray newRay(light.p, x - light.p);
+    Ray newRay= Ray(light.p, x - light.p);
+    Vector lightD = newRay.d.normalize();
 
     Color emittance = light.l;
 
-    double auxDistance = sqrt(newRay.d.dot(newRay.d));
+    // double auxDistance = sqrt(newRay.d.dot(newRay.d));
 
-    lightIndx = 0;
     // determinar si hay linea de vista entre la luz y la esfera
     if (intersect(newRay, tlight, lightIndx))
     {
 
-        Color xprim = newRay.o + newRay.d * tlight;
+        Point xprim = newRay.o + newRay.d * tlight;
         //revisamos que sea el mismo objeto con el que intersectamos. 
         if (id == lightIndx)
         {
-        
-            double xpNormSqr = xprim.dot(xprim);
+            // printf("Tlight  %g\n", tlight);
+            // cout << tlight << endl;
+            Point xp = (xprim - light.p );
+            double xpNormSqr = xp.dot(xp);
             emittance = emittance * (1 / xpNormSqr);
         }
         else
@@ -137,7 +139,6 @@ Color shade(const Ray &r, int depth, int mode)
     else
         emittance = Color();
 
-    Vector lightD = newRay.d.normalize();
     double cos_theta = n.dot(lightD);
 
     Color BRDF = obj.c * (1 / pi);
@@ -153,7 +154,7 @@ int main(int argc, char *argv[])
 {
     int w = 1024, h = 768; // image resolution
     // Numero de muestras por pixel.
-    const int pixel_samples = 32;
+    const int pixel_samples = 1;
     // Numero de rebotes.
     const int depth = 2;
     // Modo de muestreo. 0 para esfera unitaria, 1 para esfera hemisferica, 2 para coseno hemisferica
@@ -195,7 +196,7 @@ int main(int argc, char *argv[])
                     Vector cameraRayDir = u + v + camera.d;
                     // incrementamos valores de ese pixel
 
-                    pixelValue = pixelValue + shade(Ray(camera.o, cameraRayDir.normalize()), depth, mode);
+                    pixelValue = pixelValue + shade(Ray(camera.o, cameraRayDir.normalize()) ,mode, depth);
                 }
                 // promedio y escalado del valor del pixel
                 auto scale = 1.0 / pixel_samples;
