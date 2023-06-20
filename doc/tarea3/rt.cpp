@@ -131,6 +131,7 @@ Color shade(const Ray &r, int depth, int mode)
             // cout << tlight << endl;
             Point xp = (xprim - light.p );
             double xpNormSqr = xp.dot(xp);
+            // double xpNormSqr = xprim.dot(xprim);
             emittance = emittance * (1 / xpNormSqr);
         }
         else
@@ -187,11 +188,11 @@ int main(int argc, char *argv[])
                 // ciclo de muestreo para antiAlias.
                 for (int i = 0; i < pixel_samples; i++)
                 {
-                    // auto u = cx * (double(x) / w - .5);
-                    // auto v = cy * (double(y) / h - .5);
+                    auto u = cx * (double(x) / w - .5);
+                    auto v = cy * (double(y) / h - .5);
                     // se le agrega un valor aleatorio a cada pixel en X Y para muestrear mas puntos, no solo el centro del pixel
-                    auto u = cx * (double(x + random_double()) / w - 0.5);
-                    auto v = cy * (double(y + random_double()) / h - 0.5);
+                    // auto u = cx * (double(x + random_double()) / w - 0.5);
+                    // auto v = cy * (double(y + random_double()) / h - 0.5);
                     // se lanza rayo con las variaciones en direccion
                     Vector cameraRayDir = u + v + camera.d;
                     // incrementamos valores de ese pixel
