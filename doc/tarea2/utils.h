@@ -51,7 +51,7 @@ void coordinateSystem(const Vector &n, Vector &s, Vector &t)
 // Retorna real aleatorio en el rango  [0,1).
 inline double random_double()
 {
-    return rand() / (RAND_MAX + 1.0);
+    return drand48();
 }
 
 // Retorna real aleatorio en el rango [min,max).
@@ -63,12 +63,16 @@ inline double random_double(double min, double max)
 // Retorna un vector aleatorio en una esfera unitaria.
 inline Vector random_in_sphere()
 {
-    auto r1 = random_double();
-    auto r2 = random_double();
+    double r1 = random_double();
+    double r2 = random_double();
 
-    auto x = cos(2 * pi * r1) * 2 * sqrt(r2 * (1 - r2));
-    auto y = sin(2 * pi * r1) * 2 * sqrt(r2 * (1 - r2));
-    auto z = 1 - 2 * r2;
+    double theta = acos(1.0-(2.0*r1));
+    double phi = 2.0*pi*r2;
+
+    double x = cos(phi)*sin(theta);
+    double y = sin(phi) *sin(theta);
+    // auto z = cos(theta);
+    double z = 1.0-2.0*r1;
 
     return Vector(x, y, z);
 }

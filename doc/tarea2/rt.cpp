@@ -97,19 +97,18 @@ Color shade(const Ray &r, int depth, int mode)
     {
     case 1:
         target = random_in_hemisphere();
-        p = 0.5 / pi;
+        p = 1.0 / (2.0*pi);
         break;
 
     case 2:
         target = random_cosine_hemisphere(tetha);
-        // double cos_theta = newRay.d.dot(n);
         p = (1.0 / pi) * cos(tetha);
         break;
 
     // case:0
     default:
         target = random_in_sphere();
-        p = 1.0 / (4.0 * pi);
+        p = 1.0/(4.0 * pi);
         break;
     }
 
@@ -127,11 +126,11 @@ Color shade(const Ray &r, int depth, int mode)
 
     double cos_theta = newRay.d.dot(n);
 
-    Color BRDF = obj.c * (1 / pi);
+    Color BRDF = obj.c * (1.0 / pi);
     Color emittance = obj.l;
 
     Color incomingColor = shade(newRay, depth - 1, mode);
-    Color colorValue = emittance + (incomingColor.mult(BRDF) * cos_theta) *(1.0/p);
+    Color colorValue = emittance + (incomingColor.mult(BRDF) * cos_theta) * (1.0/p);
     return colorValue;
 }
 
@@ -142,9 +141,9 @@ int main(int argc, char *argv[])
     // Numero de muestras por pixel.
     const int pixel_samples = 32;
     // Numero de rebotes.
-    const int depth = 3;
+    const int depth = 2;
     // Modo de muestreo. 0 para esfera unitaria, 1 para esfera hemisferica, 2 para coseno hemisferica
-    const int mode = 2;
+    const int mode = 1;
 
     // fija la posicion de la camara y la dirección en que mira
     Ray camera(Point(0, 11.2, 214), Vector(0, -0.042612, -1).normalize());
@@ -166,7 +165,7 @@ int main(int argc, char *argv[])
         {
             // recorre todos los pixeles de la imagen
             fprintf(stderr, "\r%5.2f%%", 100. * y / (h - 1));
-
+            // ciclo de muestreo
             for (int x = 0; x < w; x++)
             {
                 int idx = (h - y - 1) * w + x; // index en 1D para una imagen 2D x,y son invertidos
@@ -176,9 +175,10 @@ int main(int argc, char *argv[])
                 for (int i = 0; i < pixel_samples; i++)
                 {
                     // computar el color del pixel para el punto que intersectó el rayo desde la camara
-                    pixelValue = pixelValue + shade(Ray(camera.o, cameraRayDir.normalize()),depth,mode);
+                    pixelValue = pixelValue + shade(Ray(camera.o, cameraRayDir.normalize()), depth, mode);
                 }
-                pixelValue = pixelValue * (1.0/pixel_samples);
+                // se divide por el numero de muestras.
+                pixelValue = pixelValue * (1.0 / pixel_samples);
                 // limitar los tres valores de color del pixel a [0,1]
                 pixelColors[idx] = Color(clamp(pixelValue.x), clamp(pixelValue.y), clamp(pixelValue.z));
             }
