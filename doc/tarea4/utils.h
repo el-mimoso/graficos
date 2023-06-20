@@ -10,7 +10,6 @@ using namespace std;
 
 const double pi = 3.141592;
 
-
 // limita el valor de x a [0,1]
 inline double
 clamp(const double x)
@@ -85,6 +84,15 @@ void coordinateSystem(const Vector &n, Vector &s, Vector &t)
     }
     s = cross(t, n);
 }
+// transforma un vector local a global
+Vector makeGlobal(Vector &target, const Vector &n, const Vector &s, const Vector &t)
+{
+    Vector globalized(
+        Vector(s.x, t.x, n.x).dot(target),
+        Vector(s.y, t.y, n.y).dot(target),
+        Vector(s.z, t.z, n.z).dot(target));
+    return globalized;
+}
 
 // Retorna real aleatorio en el rango  [0,1).
 inline double random_double()
@@ -125,6 +133,15 @@ Vector createVec(double &theta, double &phi)
     double x = sin(theta) * cos(phi);
     double y = sin(theta) * sin(phi);
     double z = cos(theta);
+    return Vector(x, y, z);
+}
+// retorna un vector dado un angulo theta, phi y radio de la esfera
+Vector createVec(double &theta, double &phi, Sphere s)
+{
+    double radio = s.r;
+    double x = radio * sin(theta) * cos(phi);
+    double y = radio * sin(theta) * sin(phi);
+    double z = radio * cos(theta);
     return Vector(x, y, z);
 }
 
@@ -168,7 +185,7 @@ void areaPhiTheta(double &phi, double &theta)
     double r1 = random_double();
     double r2 = random_double();
     theta = acos(1.0 - 2.0 * r1);
-    phi = 2.0 * M_PI * r2;
+    phi = 2.0 * pi * r2;
 }
 // prob Area
 double areaProb(Point &x, Point &xprim, Sphere fuenteLuz)
@@ -183,7 +200,7 @@ double areaProb(Point &x, Point &xprim, Sphere fuenteLuz)
     return areaInv * (distanceSquared / cosThetao);
 }
 // evaluacionArea -> radiancia LE en la ecuacion de rendering
-Color areaEval(Point &x, Vector &wi,int idLuz, Sphere fuenteLuz, Sphere spheres[], int spheresLength)
+Color areaEval(Point &x, Vector &wi, int idLuz, Sphere fuenteLuz, Sphere spheres[], int spheresLength)
 {
     Color Le;
     double t;
@@ -205,9 +222,56 @@ Color areaEval(Point &x, Vector &wi,int idLuz, Sphere fuenteLuz, Sphere spheres[
     }
     else
     {
-        Le =  Color(0.0, 0.0, 0.0);
+        Le = Color(0.0, 0.0, 0.0);
     }
     return Le;
 }
 
 // funciones para la importancia de luz según: angulo solido
+// muestreo Solid Angle
+void solidAnglePhiTheta(double &phi, double &theta, Point p, Sphere fuenteLuz, double &cosTethaMax)
+{
+    double r = fuenteLuz.r;
+    double r1 = random_double();
+    double r2 = random_double();
+
+    Vector wc = (fuenteLuz.p - p);
+    double pcp = sqrt(wc.dot(wc));
+    double sinTethaMax = r / pcp;
+
+    cosTethaMax = sqrt(1.0 - (sinTethaMax * sinTethaMax)); 
+    theta = acos(1.0 - r1 + (r1 * cosTethaMax));
+    phi = 2.0 * pi * r2;
+}
+// probabilidad de muestreo Solid Angle
+double solidAngleProb(double cosTethaMax)
+{
+    return 1.0 / (2.0 * pi * (1.0 - cosTethaMax));
+}
+// evaluacion Solid Angle
+Color solidAngleEval(Point &x, Vector &wi, Sphere fuenteLuz, Sphere spheres[], int spheresLength)
+{
+    Color Le;
+    double t;
+    // wi.normalize();
+    Ray ray(x, wi);
+    int id = 0;
+
+    if (intersect(ray, t, id, spheres, spheresLength))
+    {
+       Sphere obj = spheres[id];
+        if (obj.l.dot(obj.l) > 0.01)
+        {
+            Le = fuenteLuz.l;
+        }
+        else
+        {
+            Le = Color(0.0, 0.0, 0.0);
+        }
+    }
+    else
+    {
+        Le = Color(0.0, 0.0, 0.0);
+    }
+    return Le;
+}

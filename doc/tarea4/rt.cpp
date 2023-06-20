@@ -21,26 +21,29 @@ Sphere spheres[] = {
     Sphere(1e5, Point(0, -1e5 - 40.8, 0), Color(.25, .75, .75), Color()), // suelo
     Sphere(1e5, Point(0, 1e5 + 40.8, 0), Color(.75, .75, .25), Color()),  // techo
     Sphere(16.5, Point(-23, -24.3, -34.6), Color(.2, .3, .4), Color()),   // esfera abajo-izq
-    Sphere(16.5, Point(23, -24.3, -3.6), Color(.4, .3, .2), Color()),     // esfera abajo-der
-    Sphere(10.5, Point(0, 24.3, 0), Color(1, 1, 1), Color(10, 10, 10))};
+    Sphere(16.5, Point(23, -24.3, -3.6), Color(.4, .3, .2), Color()), // esfera abajo-der
+    Sphere(10.5, Point(0, 24.3, 0), Color(1, 1, 1), Color(10,10,10)),
+};
 // almacenamos las luces.
-vector<Sphere> lights;
+vector<int> lights;
 const int spheresLength = sizeof(spheres) / sizeof(spheres[0]);
-// int lightsLength = arraySize(spheres);
+// int lightsLength [] = arraySize(spheres);
 
-void getLightsIndx()
+int getLightsIndx()
 {
     int lightsCount = 0;
     for (int i = 0; i < spheresLength; i++)
     {
         if (spheres[i].l.x > 0.001 || spheres[i].l.y > 0.001 || spheres[i].l.z > 0.001)
         {
-            lights.push_back(spheres[i]);
+            // lightsPos[i].first = i;
+            lights.push_back(i);
         }
     }
-    cout << lights.size() << endl;
+    return lights.size();
     // cout << areaProb(0);
 }
+const int totalLights = getLightsIndx();
 
 // Calcula el valor de color para el rayo dado, seleccionar muestreo aleatorio
 // 0 para muestreo de area
@@ -50,6 +53,9 @@ Color shade(const Ray &r, int mode)
 {
     double t;
     int id = 0;
+    // seleccionar una luz aleatoria entre las luces de la escena
+    int thisLight = randint(0, totalLights - 1);
+    thisLight = lights[thisLight];
 
     if (!intersect(r, t, id, spheres, spheresLength))
         // el rayo no intersecto objeto, return Vector() == negro
@@ -65,14 +71,18 @@ Color shade(const Ray &r, int mode)
 
     // Point target;
     double p;
-    double tetha;
+    double theta;
+    double phi;
     Vector s;
     Vector ta;
     Color emittance;
-    double cos_theta;
-    Color colorValue;
+    double cosTheta;
+    Color colorValue, Le, BRDF;
+    Vector wc, wi;
 
-    if (id == 7)
+    Sphere lightSrc = spheres[thisLight];
+
+    if (id == thisLight)
     {
         colorValue = Color(0, 0, 0);
     }
@@ -81,29 +91,40 @@ Color shade(const Ray &r, int mode)
         // para muestreo de area
         if (mode == 0)
         {
-            double theta, phi;
-            // armamos sistema de coordenadas
-            coordinateSystem(n, s, ta);
+            // double theta, phi;
+            wc = (lightSrc.p - x).normalize();
             // actualizamos valores de teta y phi por referencia
-            // paramArea(theta,phi);
             areaPhiTheta(phi, theta);
             // vector unitario d
-            Vector d = createVec(theta, phi).normalize();
-            Point x1 = spheres[7].p + d * spheres[7].r;
-            Vector wi = x1 - x;
-            Color Le = areaEval(x, wi, 7, spheres[7], spheres, spheresLength);
-            Color BRDF = obj.c * (1.0 / pi);
-            cos_theta = n.dot(wi.normalize());
-            p = areaProb(x, x1, spheres[7]);
-            colorValue = Le.mult(BRDF) * (cos_theta / p);
+            Vector d = createVec(theta, phi, lightSrc).normalize();
+            Point x1 = lightSrc.p + d * lightSrc.r;
+            wi = x1 - x;
+            Le = areaEval(x, wi, 7, lightSrc, spheres, spheresLength);
+            BRDF = obj.c * (1.0 / pi);
+            cosTheta = n.dot(wi.normalize());
+            p = areaProb(x, x1, lightSrc);
+            colorValue = Le.mult(BRDF) * (cosTheta / p);
         }
         // para muestreo de angulo solido
-        else
+        else if (mode == 1)
         {
-            printf("por implementar");
+            // // armamos sistema de coordenadas
+            wc = (lightSrc.p - x).normalize();
+            coordinateSystem(wc, s, ta);
+            // // actualizamos valores de teta, phi y Cos theta Max por referencia
+            double cosThetaMax;
+            solidAnglePhiTheta(phi, theta, x, lightSrc, cosThetaMax);
+            wi = createVec(theta, phi).normalize();
+            Vector wiGlobal = makeGlobal(wi, wc, s, ta);
+            wiGlobal.normalize();
+            Le = solidAngleEval(x, wiGlobal, lightSrc, spheres, spheresLength);
+            BRDF = obj.c * (1 / pi);
+            cosTheta = n.dot(wiGlobal);
+            p = solidAngleProb(cosThetaMax);
+            colorValue = colorValue + Le.mult(BRDF) * (cosTheta / p);
         }
     }
-    return obj.l + colorValue;
+    return (obj.l + colorValue);
 }
 
 // funcion principal
@@ -113,9 +134,15 @@ int main(int argc, char *argv[])
     // Numero de muestras por pixel.
     const int pixel_samples = 32;
     // Modo de muestreo. 0 para area, 1 para angulo solido.
-    const int mode = 0;
+    const int mode = 1;
+    cout << "Total lights : " << totalLights << endl;
 
-    getLightsIndx();
+    for (int i = 0; i < totalLights; i++)
+    {
+        cout << "indices de luces: " <<lights[i] << endl;
+    }
+    
+    // getLightsIndx();
 
     // fija la posicion de la camara y la dirección en que mira
     Ray camera(Point(0, 11.2, 214), Vector(0, -0.042612, -1).normalize());
