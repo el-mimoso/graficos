@@ -1,5 +1,9 @@
+#ifndef SPHEREH
+#define SPHEREH
+
 #include "vec.h"
 #include "ray.h"
+#include "material.h"
 #pragma once
 
 class Sphere
@@ -7,13 +11,14 @@ class Sphere
 public:
     double r; // radio de la esfera
     Point p;  // posicion
-    Color c;  // color
-    Color l;  // luz
+    Material *m; // material
+    // Color c;  // color
+    // Color l;  // luz
 
-    Sphere(double r_, Point p_, Color c_, Color l_) : r(r_), p(p_), c(c_), l(l_) {}
+    // Sphere(double r_, Point p_, Color c_, Color l_) : r(r_), p(p_), c(c_), l(l_) {}
+    Sphere(double r_, Point p_, Material* m_) : r(r_), p(p_), m(m_) {}
 
     // determina si el rayo intersecta a esta esfera
-    // -1 si no toca, t de lo contrario.
     double intersect(const Ray &ray) const
     {
         // se asignan los valores de la formula general cuadratica "la del chicharronero"
@@ -58,3 +63,4 @@ public:
         }
     }
 };
+#endif

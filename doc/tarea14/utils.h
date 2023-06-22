@@ -1,3 +1,4 @@
+#pragma once
 #include "vec.h"
 #include "ray.h"
 #include "sphere.h"
@@ -9,7 +10,6 @@
 using namespace std;
 
 const double pi = 3.141592;
-
 
 // limita el valor de x a [0,1]
 inline double
@@ -33,6 +33,11 @@ Vector cross(Vector a, Vector b)
     return a % b;
 }
 
+// int arraySize(Sphere array[])
+// {
+//     return sizeof(array) / sizeof(array[0]);
+// }
+
 void coordinateSystem(const Vector &n, Vector &s, Vector &t)
 {
     if (std::abs(n.x) > std::abs(n.y))
@@ -47,6 +52,15 @@ void coordinateSystem(const Vector &n, Vector &s, Vector &t)
     }
     s = cross(t, n);
 }
+// transforma un vector local a global
+Vector makeGlobal(Vector &target, const Vector &n, const Vector &s, const Vector &t)
+{
+    Vector globalized(
+        Vector(s.x, t.x, n.x).dot(target),
+        Vector(s.y, t.y, n.y).dot(target),
+        Vector(s.z, t.z, n.z).dot(target));
+    return globalized;
+}
 
 // Retorna real aleatorio en el rango  [0,1).
 inline double random_double()
@@ -60,15 +74,24 @@ inline double random_double(double min, double max)
     return min + (max - min) * random_double();
 }
 
+int randint(int Min, int Max)
+{
+    return rand() % (Max + 1 - Min) + Min;
+}
+
 // Retorna un vector aleatorio en una esfera unitaria.
 inline Vector random_in_sphere()
 {
-    auto r1 = random_double();
-    auto r2 = random_double();
+    double r1 = random_double();
+    double r2 = random_double();
 
-    auto x = cos(2 * pi * r1) * 2 * sqrt(r2 * (1 - r2));
-    auto y = sin(2 * pi * r1) * 2 * sqrt(r2 * (1 - r2));
-    auto z = 1 - 2 * r2;
+    double theta = acos(1.0 - (2.0 * r1));
+    double phi = 2.0 * pi * r2;
+
+    double x = cos(phi) * sin(theta);
+    double y = sin(phi) * sin(theta);
+    // auto z = cos(theta);
+    double z = 1.0 - 2.0 * r1;
 
     return Vector(x, y, z);
 }
@@ -100,8 +123,8 @@ inline Vector random_cosine_hemisphere(double &theta)
     auto z = sqrt(1 - r2);
     auto x = cos(phi) * sqrt(r2);
     auto y = sin(phi) * sqrt(r2);
-    
+
     theta = acos(z);
-    
+
     return Vector(x, y, z);
 }

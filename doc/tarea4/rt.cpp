@@ -21,7 +21,7 @@ Sphere spheres[] = {
     Sphere(1e5, Point(0, -1e5 - 40.8, 0), Color(.25, .75, .75), Color()), // suelo
     Sphere(1e5, Point(0, 1e5 + 40.8, 0), Color(.75, .75, .25), Color()),  // techo
     Sphere(16.5, Point(-23, -24.3, -34.6), Color(.2, .3, .4), Color()),   // esfera abajo-izq
-    Sphere(16.5, Point(23, -24.3, -3.6), Color(.4, .3, .2), Color()), // esfera abajo-der
+    Sphere(16.5, Point(23, -24.3, -3.6), Color(.4, .3, .2), Color(10,10,10)), // esfera abajo-der
     Sphere(10.5, Point(0, 24.3, 0), Color(1, 1, 1), Color(10,10,10)),
 };
 // almacenamos las luces.
@@ -53,9 +53,6 @@ Color shade(const Ray &r, int mode)
 {
     double t;
     int id = 0;
-    // seleccionar una luz aleatoria entre las luces de la escena
-    int thisLight = randint(0, totalLights - 1);
-    thisLight = lights[thisLight];
 
     if (!intersect(r, t, id, spheres, spheresLength))
         // el rayo no intersecto objeto, return Vector() == negro
@@ -80,6 +77,9 @@ Color shade(const Ray &r, int mode)
     Color colorValue, Le, BRDF;
     Vector wc, wi;
 
+    // seleccionar una luz aleatoria entre las luces de la escena
+    int thisLight = randint(0, totalLights - 1);
+    thisLight = lights[thisLight];
     Sphere lightSrc = spheres[thisLight];
 
     if (id == thisLight)
@@ -175,6 +175,7 @@ int main(int argc, char *argv[])
                 {
                     // computar el color del pixel para el punto que intersectó el rayo desde la camara
                     pixelValue = pixelValue + shade(Ray(camera.o, cameraRayDir.normalize()), mode);
+                    // pixelValue = pixelValue * (1/totalLights);
                 }
                 // se divide por el numero de muestras.
                 pixelValue = pixelValue * (1.0 / pixel_samples);
