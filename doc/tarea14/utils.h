@@ -53,7 +53,7 @@ void coordinateSystem(const Vector &n, Vector &s, Vector &t)
     s = cross(t, n);
 }
 // transforma un vector local a global
-Vector makeGlobal(Vector &target, const Vector &n, const Vector &s, const Vector &t)
+Vector makeGlobal(Vector target,  Vector n,  Vector s,  Vector t)
 {
     Vector globalized(
         Vector(s.x, t.x, n.x).dot(target),
@@ -118,13 +118,18 @@ inline Vector random_cosine_hemisphere(double &theta)
     auto r1 = random_double();
     auto r2 = random_double();
 
-    auto phi = 2 * pi * r1;
+    auto phi = 2 * pi * r2;
+    theta =  acos(sqrt(1-r1));
+    double z = cos(theta);
+    // auto z = sqrt(1 - r1);
+    // theta = acos(z);
 
-    auto z = sqrt(1 - r2);
-    auto x = cos(phi) * sqrt(r2);
-    auto y = sin(phi) * sqrt(r2);
+    auto x = cos(phi) * sin(theta);
+    auto y = sin(phi) * sin(theta);
 
-    theta = acos(z);
+
+
+
 
     return Vector(x, y, z);
 }

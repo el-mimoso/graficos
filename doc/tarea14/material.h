@@ -26,20 +26,26 @@ public:
 class DifusseOG : public Material
 {
 private:
-    double tetha;
-    Color albedo;
-    Color emmitanceColor;
+    double tetha = 0.0;
+    Color emmitanceColor = Color(0.0, 0.0, 0.0);
+    Color albedo = Color(0.0, 0.0, 0.0);
+    Vector wo = Vector(0.0, 0.0, 0.0);
 
 public:
     DifusseOG(Color _albedo, Color _emmitanceColor) : albedo(_albedo), emmitanceColor(_emmitanceColor){};
-    virtual double probability() override
+    //retornamos la probabilidad de la direccion
+    virtual double probability() 
     {
         return (1.0 / pi) * cos(tetha);
     }
+    //generamos una direccion aleatoria
     virtual Vector sampling() override
     {
-        return random_cosine_hemisphere(tetha);
+        Vector wo = random_cosine_hemisphere(tetha);
+        return wo;
+        // return random_cosine_hemisphere(tetha);
     }
+    //evaluamos la BRDF
     virtual Color eval_f() override
     {
         return albedo * (1.0 / pi);
@@ -49,49 +55,4 @@ public:
         return emmitanceColor;
     }
 };
-class DifusseON : public Material
-{
-private:
-    double tetha;
-    Color albedo;
-    Color emmitanceColor;
-    double sigma;
-
-public:
-    DifusseON(Color _albedo, Color _emmitanceColor, double _sigma) : albedo(_albedo), emmitanceColor(_emmitanceColor), sigma(_sigma){};
-
-    virtual double probability() override
-    {
-        return (1.0 / pi) * cos(tetha);
-    }
-    virtual Vector sampling() override
-    {
-        return random_cosine_hemisphere(tetha);
-    }
-    virtual Color eval_f() override
-    {
-        double A, B;
-        double sigma2 = sigma * sigma;
-        double alpha,betha;
-
-        A = 1.0 - (sigma2 / (2.0 * (sigma2 + 0.33)));
-        B = (0.45 * sigma2) / (sigma2 + 0.09);
-
-        Color fr = albedo * (1.0 / pi);
-        fr = fr * (A + B * sin(alpha) * tan(betha));
-        return fr;
-    }
-    virtual Color emmitance() override
-    {
-        return emmitanceColor;
-    }
-};
-
-// class Metal : Material
-// {
-// };
-
-// class Dielectric : Material
-// {
-// };
 #endif

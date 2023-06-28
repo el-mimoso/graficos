@@ -33,7 +33,6 @@ Sphere spheres[] = {
     Sphere(16.5, Point(-23, -24.3, -34.6), &m6), // esfera abajo-izq
     Sphere(16.5, Point(23, -24.3, -3.6), &m7),   // esfera abajo-der
     Sphere(10.5, Point(0, 24.3, 0), &m8)         // esfera arriba
-    // Sphere(0, Point(0, 24.3, 0), Color(1, 1, 1), Color(10, 10, 10)) // esfera arriba
 };
 
 const int spheresLength = sizeof(spheres) / sizeof(spheres[0]);
@@ -95,7 +94,8 @@ Color shade(const Ray &r, int depth)
     Color emittance = material->emmitance();
 
     // terminamos el camino si pegamos con una fuente de luz.
-    if (emittance.dot(emittance) > 0.00001)
+    // if (emittance.dot(emittance) > 0.00001)
+    if (emittance.x > 0.0 && emittance.y > 0.0 && emittance.z > 0.0)
     {
         return emittance;
     }
@@ -106,24 +106,26 @@ Color shade(const Ray &r, int depth)
     // determinar la dirección normal en el punto de interseccion
     Vector n = (x - obj.p).normalize();
 
-    Point target;
+    Point wo;
     double p;
-    double tetha;
-
-    target = material->sampling();
-    p = material->probability();
+    
+    wo = material->sampling();
+    wo.normalize();
 
     // se arma el sistema de coordenadas
     Vector s, ta;
     coordinateSystem(n, s, ta);
-    Point dir = makeGlobal(target, n, s, ta);
+    Point dir = makeGlobal(wo, n, s, ta);
+    p = material->probability();
+    // Point dir(target.dot(Point(s.x, ta.x, n.x)), target.dot(Point(s.y, ta.y, n.y)), target.dot(Point(s.z, ta.z, n.z)));
+
     // direccion saliente
     Ray newRay(x, dir);
-    double cos_theta = newRay.d.dot(n);
+    double cos_theta = dir.dot(n);
     Color BRDF = material->eval_f();
 
     Color incomingColor = shade(newRay, depth - 1);
-    Color colorvalue = (incomingColor.mult(BRDF) * (cos_theta / p));
+    Color colorvalue = (incomingColor.mult(BRDF) * fabs(cos_theta / p));
     return colorvalue;
 }
 
@@ -132,7 +134,7 @@ int main(int argc, char *argv[])
 {
     int w = 1024, h = 768; // image resolution
     // Numero de muestras por pixel.
-    const int pixel_samples = 32;
+    const double pixel_samples = 512.0;
     // Numero de rebotes.
     const int depth = 10;
 
@@ -170,7 +172,7 @@ int main(int argc, char *argv[])
                 }
                 pixelValue = pixelValue * (1.0 / pixel_samples);
                 // limitar los tres valores de color del pixel a [0,1]
-                pixelColors[idx] = Color(clamp(pixelValue.x), clamp(pixelValue.y), clamp(pixelValue.z));
+                pixelColors[idx] = pixelColors[idx] + Color(clamp(pixelValue.x), clamp(pixelValue.y), clamp(pixelValue.z));
             }
         }
     }
