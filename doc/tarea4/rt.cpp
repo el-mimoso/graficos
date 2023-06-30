@@ -21,7 +21,7 @@ Sphere spheres[] = {
     Sphere(1e5, Point(0, -1e5 - 40.8, 0), Color(.25, .75, .75), Color()), // suelo
     Sphere(1e5, Point(0, 1e5 + 40.8, 0), Color(.75, .75, .25), Color()),  // techo
     Sphere(16.5, Point(-23, -24.3, -34.6), Color(.2, .3, .4), Color()),   // esfera abajo-izq
-    Sphere(16.5, Point(23, -24.3, -3.6), Color(.4, .3, .2), Color(10,10,10)), // esfera abajo-der
+    Sphere(16.5, Point(23, -24.3, -3.6), Color(.4, .3, .2), Color()), // esfera abajo-der
     Sphere(10.5, Point(0, 24.3, 0), Color(1, 1, 1), Color(10,10,10)),
 };
 // almacenamos las luces.
