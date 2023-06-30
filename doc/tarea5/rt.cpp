@@ -80,7 +80,7 @@ inline bool intersect(const Ray &r, double &t, int &id)
 // 1 para esfera hemisferica
 // 2 para coseno hemisferica
 // regresar el color resultante
-Color shade(const Ray &r, int depth, int mode)
+Color shade(const Ray &r, int depth)
 {
     double t;
     int id = 0;
@@ -93,6 +93,14 @@ Color shade(const Ray &r, int depth, int mode)
         return Color(0, 0, 0);
 
     const Sphere &obj = spheres[id];
+    Material *material = obj.m;
+    Color emittance = material->emmitance();
+
+    // terminamos el camino si pegamos con una fuente de luz.
+    if (emittance.dot(emittance) > 0.01)
+    {
+        return emittance;
+    }
 
     // determinar coordenadas del punto de interseccion
     Point x = r.o + r.d * t;
@@ -104,28 +112,22 @@ Color shade(const Ray &r, int depth, int mode)
     double p;
     double tetha;
 
-    target = obj.m->sampling();
-    p = obj.m->probability();
+    target = material->sampling();
+    p = material->probability();
 
     // se arma el sistema de coordenadas
-    Vector s;
-    Vector ta;
+    Vector s, ta;
     coordinateSystem(n, s, ta);
-
-    Point dir = makeGlobal(target, n, s, ta);
-
+    Point dir = makeGlobal(target, n, s, ta).normalize();
+    // direccion saliente
     Ray newRay(x, dir);
-
     double cos_theta = newRay.d.dot(n);
-    Color BRDF = obj.m->eval_f();
-    Color emittance = obj.m->emmitance();
+    Color BRDF = material->eval_f();
 
-    // Color BRDF = obj.c * (1 / pi)
-    // Color emittance = obj.l;
-
-    Color incomingColor = shade(newRay, depth - 1, mode);
-    Color colorValue = emittance + (incomingColor.mult(BRDF) * cos_theta) * (1.0 / p);
-    return colorValue;
+    Color incomingColor = shade(newRay, depth - 1);
+    Color colorvalue = (incomingColor.mult(BRDF) * (cos_theta / p));
+    return colorvalue;
+    // return colorValue;
 }
 
 // funcion principal
@@ -135,9 +137,7 @@ int main(int argc, char *argv[])
     // Numero de muestras por pixel.
     const int pixel_samples = 32;
     // Numero de rebotes.
-    const int depth = 3;
-    // Modo de muestreo. 0 para esfera unitaria, 1 para esfera hemisferica, 2 para coseno hemisferica
-    const int mode = 2;
+    const int depth = 10;
 
     // fija la posicion de la camara y la dirección en que mira
     Ray camera(Point(0, 11.2, 214), Vector(0, -0.042612, -1).normalize());
@@ -169,7 +169,7 @@ int main(int argc, char *argv[])
                 for (int i = 0; i < pixel_samples; i++)
                 {
                     // computar el color del pixel para el punto que intersectó el rayo desde la camara
-                    pixelValue = pixelValue + shade(Ray(camera.o, cameraRayDir.normalize()), depth, mode);
+                    pixelValue = pixelValue + shade(Ray(camera.o, cameraRayDir.normalize()), depth);
                 }
                 pixelValue = pixelValue * (1.0 / pixel_samples);
                 // limitar los tres valores de color del pixel a [0,1]
