@@ -15,12 +15,15 @@ using namespace std;
 // materiales para la escena
 
 DifusseOG m1(Color(0.75, 0.25, 0.25), Color());
-DifusseOG m2(Color(.25, .25, .75), Color());     // pared der
-DifusseOG m3(Color(.25, .75, .25), Color());     // pared detras
-DifusseOG m4(Color(.25, .75, .75), Color());     // suelo
-DifusseOG m5(Color(.75, .75, .25), Color());     // techo
-DifusseOG m6(Color(.2, .3, .4), Color());        // esfera abajo-izq
-DifusseOG m7(Color(.4, .3, .2), Color());        // esfera abajo-der
+DifusseOG m2(Color(.25, .25, .75), Color()); // pared der
+DifusseOG m3(Color(.25, .75, .25), Color()); // pared detras
+DifusseOG m4(Color(.25, .75, .75), Color()); // suelo
+DifusseOG m5(Color(.75, .75, .25), Color()); // techo
+// DifusseOG m6(Color(.2, .3, .4), Color());    // esfera abajo-izq DIFUSO OG
+DifusseON m6(Color(.2, .3, .4), Color(), 0.5);    // esfera abajo-izq Diffuso Oren-Nayar
+// DifusseOG m7(Color(.4, .3, .2), Color());        // esfera abajo-der Diffuso OG
+DifusseON m7(Color(.4, .3, .2), Color(), 0.5); // esfera abajo-der Diffuso Oren-Nayar
+
 DifusseOG m8(Color(1, 1, 1), Color(10, 10, 10)); // esfera arriba
 
 Sphere spheres[] = {
@@ -122,7 +125,7 @@ Color shade(const Ray &r, int depth)
     // direccion saliente
     Ray newRay(x, dir);
     double cos_theta = newRay.d.dot(n);
-    Color BRDF = material->eval_f();
+    Color BRDF = material->eval_f(r, newRay, n);
 
     Color incomingColor = shade(newRay, depth - 1);
     Color colorvalue = (incomingColor.mult(BRDF) * (cos_theta / p));
@@ -135,7 +138,7 @@ int main(int argc, char *argv[])
 {
     int w = 1024, h = 768; // image resolution
     // Numero de muestras por pixel.
-    const int pixel_samples = 32;
+    const int pixel_samples = 100;
     // Numero de rebotes.
     const int depth = 10;
 

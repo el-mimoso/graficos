@@ -24,43 +24,37 @@ public:
         // se asignan los valores de la formula general cuadratica "la del chicharronero"
 
         Vector oc = ray.o - p;
-        double a = ray.d.dot(ray.d);
+        Vector a = ray.d;
+        double t = 0.0;
+        double tol = 0.00001;
         double b = oc.dot(ray.d);
         double c = oc.dot(oc) - r * r;
-        double discriminant = b * b - a * c;
-        // solo si el valor de discriminant es positivo hacemos la raiz cuadrada para ahorrar tiempo de computo
-        // de otra forma retorna -1
-        if (discriminant < 0)
+        double discriminant = b * b - c;
+        // // solo si el valor de discriminant es positivo hacemos la raiz cuadrada para ahorrar tiempo de computo
+        // // de otra forma retorna -1
+        if (discriminant < tol)
         {
             return 0.0;
         }
         else
         {
-            double tplus = (-b + sqrt(discriminant)) / a;
-            double tminus = (-b - sqrt(discriminant)) / a;
-            double t;
-
-            // ambos positivos
-            if (tminus > 0 && tplus > 0)
-            {
-                t = std::min(tminus, tplus);
-            }
-            // tminus positivo, tplus negativo
-            else if (tminus > 0 && tplus < 0)
-            {
-                t = tminus;
-            }
-            // tminus negativo, tplus positivo
-            else if (tminus < 0 && tplus > 0)
-            {
-                t = tplus;
-            }
-            else
-            {
-                t = 0;
-            }
-            return t;
+            discriminant = sqrt(discriminant);
         }
+        // tminus
+        t = -b - discriminant;
+
+        // asegurarnos que t sea positivo
+        if (t > tol)
+            return t;
+        else
+            // tplus
+            t = -b + discriminant;
+        // asegurarnos que t sea positivo
+        if (t > tol)
+            return t;
+        else
+            return 0.0;
     }
+
 };
 #endif
