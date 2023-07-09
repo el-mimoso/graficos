@@ -69,26 +69,55 @@ public:
     Sphere(double r_, Point p_, Color c_, Color e_) : r(r_), p(p_), c(c_), e(e_) {}
 
     // determina si el rayo intersecta a esta esfera
+    // double intersect(const Ray &ray) const
+    // {
+    //     // regresar distancia si hay intersección
+    //     // regresar 0.0 si no hay interseccion
+    //     Vector op = ray.o - p;
+    //     Vector d = ray.d;
+    //     double b = (op.dot(d));
+    //     double ce = op.dot(op) - r * r;
+    //     double disc = b * b - ce;
+    //     if (disc < 0)
+    //         return 0.0;
+    //     else
+    //     {
+    //         double t0 = -b + sqrt(disc);
+    //         double t1 = -b - sqrt(disc);
+    //         double t = (t0 < t1) ? t0 : t1;
+    //         if (t < 0)
+    //             return 0;
+    //         else
+    //             return t;
+    //     }
+    // }
+
     double intersect(const Ray &ray) const
     {
-        // regresar distancia si hay intersección
-        // regresar 0.0 si no hay interseccion
-        Vector op = ray.o - p;
-        Vector d = ray.d;
-        double b = (op.dot(d));
-        double ce = op.dot(op) - r * r;
-        double disc = b * b - ce;
-        if (disc < 0)
+        // se asignan los valores de la formula general cuadratica "la del chicharronero"
+
+        Vector oc = ray.o - p;
+        double a = ray.d.dot(ray.d);
+        double b = oc.dot(ray.d);
+        double c = oc.dot(oc) - r * r;
+        double discriminant = b * b - a * c;
+        // solo si el valor de discriminant es positivo hacemos la raiz cuadrada para ahorrar tiempo de computo
+        // de otra forma retorna -1
+        if (discriminant < 0)
+        {
             return 0.0;
+        }
         else
         {
-            double t0 = -b + sqrt(disc);
-            double t1 = -b - sqrt(disc);
-            double t = (t0 < t1) ? t0 : t1;
-            if (t < 0)
-                return 0;
+            double tplus = (-b + sqrt(discriminant)) / a;
+            double tminus = (-b - sqrt(discriminant)) / a;
+
+            if (tplus < tminus)
+                return tplus;
             else
-                return t;
+                return tminus;
+
+            // return (-b - sqrt(discriminant)) / a;
         }
     }
 };
@@ -125,25 +154,58 @@ inline int toDisplayValue(const double x)
 // regresar true si hubo una intersección, falso de otro modo
 // almacenar en t la distancia sobre el rayo en que sucede la interseccion
 // almacenar en id el indice de spheres[] de la esfera cuya interseccion es mas cercana
+// inline bool intersect(const Ray &r, double &t, int &id)
+// {
+//     double n = sizeof(spheres) / sizeof(Sphere);
+//     double dist;
+//     double thresh = t = 10000;
+
+//     for (int i = 0; i < n; i++)
+//     {
+//         dist = spheres[i].intersect(r);
+//         if (dist && dist < t)
+//         {
+//             t = dist;
+//             id = i;
+//         }
+//     }
+//     if (t < thresh)
+//         return true;
+//     else
+//         return false;
+// }
+const int spheresLength = sizeof(spheres) / sizeof(spheres[0]);
 inline bool intersect(const Ray &r, double &t, int &id)
 {
-    double n = sizeof(spheres) / sizeof(Sphere);
-    double dist;
-    double thresh = t = 10000;
+    // arreglo de pares donde almacenamos la id y la distancia del rayo
+    pair<int, double> spheresData[spheresLength];
 
-    for (int i = 0; i < n; i++)
+    for (int i = 0; i < spheresLength; i++)
     {
-        dist = spheres[i].intersect(r);
-        if (dist && dist < t)
+        // asignación de valores al par
+        spheresData[i].first = i;
+        spheresData[i].second = spheres[i].intersect(r);
+        if (spheresData[i].second > 0)
         {
-            t = dist;
-            id = i;
+            id = spheresData[i].first;
+            t = spheresData[i].second;
         }
     }
-    if (t < thresh)
+    // ordenamiento de pares por la menor distancia
+    for (int i = 0; i < spheresLength; i++)
+    {
+        if (t > spheresData[i].second && spheresData[i].second > 0.0001)
+        {
+            // actualizamos valores de t e id solo si el valor almacenado en el par es menor al valor de t y que sea positivo
+            id = spheresData[i].first;
+            t = spheresData[i].second;
+        }
+    }
+    if (t > 0)
+    {
         return true;
-    else
-        return false;
+    }
+    return false;
 }
 
 // Regresar la distancia para el rayo dado
@@ -198,6 +260,7 @@ Color shade(const Ray &r)
 
     if (intersect(lightRay, t1, id1))
     {
+        cout << t1;
         Point x1 = lightRay.o + lightRay.d * t1;
         if (id == id1)
         {
