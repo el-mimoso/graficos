@@ -247,7 +247,7 @@ int main(int argc, char *argv[])
                 // pixelValue = shade(Ray(camera.o, cameraRayDir.normalize()));
 
                 // ciclo de muestreo para antiAlias.
-                for (int i = 0; i < pixel_samples - 1; i++)
+                for (int i = 0; i < pixel_samples; i++)
                 {
                     // se le agrega un valor aleatorio a cada pixel en X Y para muestrear mas puntos, no solo el centro del pixel
                     auto u = cx * (double(x + random_double(-.5, .5)) / w - 0.5);
