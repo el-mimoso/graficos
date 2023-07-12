@@ -119,7 +119,6 @@ Sphere spheres[] = {
 };
 const int spheresLength = sizeof(spheres) / sizeof(spheres[0]);
 
-
 // TODO: pasar las siguientes funciones utiles a su propio archivo.
 // limita el valor de x a [0,1]
 inline double
@@ -138,13 +137,13 @@ inline int toDisplayValue(const double x)
     return int(pow(clamp(x), 1.0 / 2.2) * 255 + .5);
 }
 
-// Returna real aleatorio en el rango  [0,1).
+// Retorna real aleatorio en el rango  [0,1).
 inline double random_double()
 {
-    return rand() / (RAND_MAX + 1.0);
+    return drand48();
 }
 
-// Returna real aleatorio en el rango [min,max).
+// Retorna real aleatorio en el rango [min,max).
 inline double random_double(double min, double max)
 {
     return min + (max - min) * random_double();
@@ -219,16 +218,6 @@ int main(int argc, char *argv[])
     // Numero de muestras por pixel.
     const int pixel_samples = 32;
 
-
-    double randomPos[pixel_samples] = {0.0};
-
-    for (int i = 0; i < pixel_samples; i++)
-    {
-        randomPos[i] = random_double();
-    }
-    
-
-
     // fija la posicion de la camara y la dirección en que mira
     Ray camera(Point(0, 11.2, 214), Vector(0, -0.042612, -1).normalize());
 
@@ -253,18 +242,18 @@ int main(int argc, char *argv[])
             {
                 int idx = (h - y - 1) * w + x; // index en 1D para una imagen 2D x,y son invertidos
                 Color pixelValue = Color();    // pixelValue en negro por ahora
-                
+
                 // Vector cameraRayDir = cx * (double(x) / w - .5) + cy * (double(y) / h - .5) + camera.d;
                 // pixelValue = shade(Ray(camera.o, cameraRayDir.normalize()));
 
                 // ciclo de muestreo para antiAlias.
-                for (int i = 0; i < pixel_samples-1; i++)
+                for (int i = 0; i < pixel_samples - 1; i++)
                 {
                     // se le agrega un valor aleatorio a cada pixel en X Y para muestrear mas puntos, no solo el centro del pixel
-                    auto u = cx * (double(x + randomPos[i])  / w - 0.5);
-                    auto v = cy * (double(y + randomPos[i]) / h - 0.5);
+                    auto u = cx * (double(x + random_double(-.5, .5)) / w - 0.5);
+                    auto v = cy * (double(y + random_double(-.5, .5)) / h - 0.5);
 
-                    // se lanza rayo con las variaciones en direccion 
+                    // se lanza rayo con las variaciones en direccion
                     Vector cameraRayDir = u + v + camera.d;
                     // incrementamos valores de ese pixel
                     pixelValue = pixelValue + shade(Ray(camera.o, cameraRayDir.normalize()));
@@ -278,8 +267,6 @@ int main(int argc, char *argv[])
             }
         }
     }
-
- 
 
     fprintf(stderr, "\n");
 
