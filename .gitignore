@@ -2,6 +2,7 @@
 book/*
 intro/*
 **/image.ppm
+**/frame*.**
 src/rt
 **.zip
 .ds_store
