@@ -1,5 +1,5 @@
 CPP=g++-12
-CPPFLAGS=-O3 -fopenmp 
+CPPFLAGS=-O3 -fopenmp  -std=gnu++17 
 
 default: rt
 

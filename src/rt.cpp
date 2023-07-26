@@ -4,26 +4,54 @@
 #include "ray.h"
 #include "sphere.h"
 #include "utils.h"
+#include "texture.h"
 
 #include <math.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <omp.h>
 #include <utility>
+#include <typeinfo>
+
 using namespace std;
+
+// colores Texturas
+SolidColor red(Color(0.75, 0.25, 0.25));
+SolidColor white(Color(0.75, 0.75, 0.75));
+SolidColor green(Color(0.25, 0.75, 0.25));
+SolidColor blue(Color(0.25, 0.25, 0.75));
+
+CheckerTexture checker(&white, &blue);
+
+ImageTexture earth("assets/earthmap.jpg");
+
+ImageTexture golfNormals("assets/golfNormals.jpg");
+
+ImageTexture rockAlbedo("assets/rock_albedo.jpeg");
+ImageTexture rockNormals("assets/rockNormals.jpeg");
+
+// materiales para la escena
+
+DifusseOG m1(Color(0.75, 0.25, 0.25), Color()); // pared izq
+DifusseOG m2(Color(0.25, 0.25, 0.75), Color()); // pared der
+DifusseOG m3(Color(0.25, 0.75, 0.25), Color()); // pared detras
+// DifusseOG m4(Color(0.25, 0.75, 0.75), Color()); // suelo
+DifusseTx m4(&white);   // suelo
+DifusseOG m5(Color(0.75, 0.75, 0.25), Color());           // techo
+DifusseTx m6(&rockAlbedo, &rockNormals);                       // esfera abajo-izq
+DifusseTx m7(&white, &golfNormals);           // esfera abajo-der
+DifusseOG m8(Color(1.00, 1.00, 1.00), Color(10, 10, 10)); // esfera arriba LUZ
 
 Sphere spheres[] = {
     // Escena: radio, posicion, color, luz
-    Sphere(1e5, Point(-1e5 - 49, 0, 0), Color(.75, .25, .25), Color()),   // pared izq
-    Sphere(1e5, Point(1e5 + 49, 0, 0), Color(.25, .25, .75), Color()),    // pared der
-    Sphere(1e5, Point(0, 0, -1e5 - 81.6), Color(.25, .75, .25), Color()), // pared detras
-    Sphere(1e5, Point(0, -1e5 - 40.8, 0), Color(.25, .75, .75), Color()), // suelo
-    Sphere(1e5, Point(0, 1e5 + 40.8, 0), Color(.75, .75, .25), Color()),  // techo
-    Sphere(16.5, Point(-23, -24.3, -34.6), Color(.2, .3, .4), Color()),   // esfera abajo-izq
-    Sphere(16.5, Point(23, -24.3, -3.6), Color(.4, .3, .2), Color()),     // esfera abajo-der
-    // Sphere(10.5, Point(0, 24.3, 0), Color(1, 1, 1), Color(10, 10, 10))    // esfera arriba
-    Sphere(0, Point(0, 24.3, 0), Color(1, 1, 1), Color(5555, 5555, 5555)) // esfera arriba
-    // sleek daft punk reference ヾ(⌐■_■)//ノ♪ 
+    Sphere(1e5, Point(-1e5 - 49, 0, 0), &m1),    // pared izq
+    Sphere(1e5, Point(1e5 + 49, 0, 0), &m2),     // pared der
+    Sphere(1e5, Point(0, 0, -1e5 - 81.6), &m3),  // pared detras
+    Sphere(1e5, Point(0, -1e5 - 40.8, 0), &m4),  // suelo
+    Sphere(1e5, Point(0, 1e5 + 40.8, 0), &m5),   // techo
+    Sphere(16.5, Point(-23, -24.3, -34.6), &m6), // esfera abajo-izq
+    Sphere(16.5, Point(23, -24.3, -3.6), &m7),   // esfera abajo-der
+    Sphere(10.5, Point(0, 24.3, 0), &m8)         // esfera arriba
 };
 
 const int spheresLength = sizeof(spheres) / sizeof(spheres[0]);
@@ -36,62 +64,35 @@ inline bool intersect(const Ray &r, double &t, int &id)
 {
     // arreglo de pares donde almacenamos la id y la distancia del rayo
     pair<int, double> spheresData[spheresLength];
+    double t_maxDistance = t = 100000000000;
 
     for (int i = 0; i < spheresLength; i++)
     {
         // asignación de valores al par
         spheresData[i].first = i;
         spheresData[i].second = spheres[i].intersect(r);
-        if (spheresData[i].second > 0)
-        {
-            id = spheresData[i].first;
-            t = spheresData[i].second;
-        }
-    }
-    // ordenamiento de pares por la menor distancia
-    for (int i = 0; i < spheresLength; i++)
-    {
-        if (t > spheresData[i].second && spheresData[i].second > 0.0001)
+
+        if (spheresData[i].second && spheresData[i].second > 0.01 && spheresData[i].second < t)
         {
             // actualizamos valores de t e id solo si el valor almacenado en el par es menor al valor de t y que sea positivo
             id = spheresData[i].first;
             t = spheresData[i].second;
         }
     }
-    if (t > 0)
+    if (t < t_maxDistance)
     {
         return true;
     }
     return false;
 }
 
-// calcula el indice de la esfera que es luz
-int getLightIndx()
-{
-    for (int i = 0; i < spheresLength; i++)
-    {
-        if (spheres[i].l.x > 0 || spheres[i].l.y > 0 || spheres[i].l.z > 0 && spheres[i].r == 0)
-        {
-            return i;
-        }
-    }
-    return -1;
-}
-
 // Calcula el valor de color para el rayo dado, seleccionar muestreo aleatorio
-// 0 para esfera unitaria
-// 1 para esfera hemisferica
-// 2 para coseno hemisferica
 // regresar el color resultante
-Color shade(const Ray &r, int depth, int mode)
+Color shade(const Ray &r, int depth)
 {
     double t;
     int id = 0;
-
-    int lightIndx = getLightIndx(); // indice de la esfera que es luz puntual
-    double tlight;
-
-    // distancia de la luz
+    hitInfo info;
 
     if (depth <= 0)
         return Color(0, 0, 0);
@@ -102,50 +103,67 @@ Color shade(const Ray &r, int depth, int mode)
 
     const Sphere &obj = spheres[id];
 
-    const Sphere &light = spheres[lightIndx];
-
     // determinar coordenadas del punto de interseccion
     Point x = r.o + r.d * t;
-    // printf("T  %g\n", t);
+    info.x = x;
 
     // determinar la dirección normal en el punto de interseccion
     Vector n = (x - obj.p).normalize();
+    info.N = n;
 
-    // se lanza un rayo desde la fuente de luz hacia el punto de interseccion
-    Ray newRay(light.p, x - light.p);
+    // actualizar las coordenadas u v
+    info.nv = checkNormalDir(n, r);
+    obj.get_UV(info.N, info.u, info.v);
 
-    Color emittance = light.l;
+    Material *material = obj.m;
+    Color emittance = material->emmitance();
 
-    double auxDistance = sqrt(newRay.d.dot(newRay.d));
-
-    lightIndx = 0;
-    // determinar si hay linea de vista entre la luz y la esfera
-    if (intersect(newRay, tlight, lightIndx))
+    // terminamos el camino si pegamos con una fuente de luz.
+    if (emittance.dot(emittance) > 0.01)
     {
-
-        Color xprim = newRay.o + newRay.d * tlight;
-        //revisamos que sea el mismo objeto con el que intersectamos. 
-        if (id == lightIndx)
-        {
-        
-            double xpNormSqr = xprim.dot(xprim);
-            emittance = emittance * (1 / xpNormSqr);
-        }
-        else
-            emittance = Color();
+        return emittance;
     }
-    else
-        emittance = Color();
 
-    Vector lightD = newRay.d.normalize();
-    double cos_theta = n.dot(lightD);
+    Point wo;
+    double p;
+    double tetha;
 
-    Color BRDF = obj.c * (1 / pi);
+    wo = material->sampling(r, info);
+    p = material->probability(info);
+    // direccion saliente
+    Ray newRay(x, wo);
+    double cos_theta = newRay.d.dot(n);
+    Color BRDF = material->eval_f(r, newRay, info);
 
-    // Color incomingColor = shade(newRay, depth - 1, mode);
+    // si el material es especular perfecto
+    if (typeid(*material) == typeid(Specular))
+    {
+        Vector wr;
+        wr = material->sampling(r, info);
+        p = material->probability(info);
+        newRay = Ray(x, wr);
+        BRDF = material->eval_f(r, newRay, info);
+        cos_theta = newRay.d.dot(n);
+        return BRDF.mult(shade(Ray(x, wr), depth - 1));
+    }
+    // si el material es dielectrico
+    if (typeid(*material) == typeid(Glass))
+    {
+        Vector wrt;
+        // Se mandan los valores de n y nv para que se haga la reflexion interna
+        wrt = material->sampling(r, info);
+        p = material->probability(info);
+        // direccion del nuevo rayo
+        newRay = Ray(x, wrt);
+        // cout<<wrt.x<<" "<<wrt.y<<" "<<wrt.z<<endl;
+        // evaluacion de la BRDF
+        BRDF = material->eval_f(r, newRay, info);
+        return BRDF.mult(shade(newRay, depth - 1));
+    }
 
-    Color colorValue = emittance.mult(BRDF * (-cos_theta));
-    return colorValue;
+    Color incomingColor = shade(newRay, depth - 1);
+    Color colorvalue = (incomingColor.mult(BRDF) * (fabs(cos_theta) / p));
+    return colorvalue;
 }
 
 // funcion principal
@@ -153,11 +171,9 @@ int main(int argc, char *argv[])
 {
     int w = 1024, h = 768; // image resolution
     // Numero de muestras por pixel.
-    const int pixel_samples = 32;
+    const int pixel_samples = 100;
     // Numero de rebotes.
-    const int depth = 2;
-    // Modo de muestreo. 0 para esfera unitaria, 1 para esfera hemisferica, 2 para coseno hemisferica
-    const int mode = 0;
+    const int depth = 3;
 
     // fija la posicion de la camara y la dirección en que mira
     Ray camera(Point(0, 11.2, 214), Vector(0, -0.042612, -1).normalize());
@@ -179,28 +195,19 @@ int main(int argc, char *argv[])
         {
             // recorre todos los pixeles de la imagen
             fprintf(stderr, "\r%5.2f%%", 100. * y / (h - 1));
+
             for (int x = 0; x < w; x++)
             {
                 int idx = (h - y - 1) * w + x; // index en 1D para una imagen 2D x,y son invertidos
                 Color pixelValue = Color();    // pixelValue en negro por ahora
-                // ciclo de muestreo para antiAlias.
+                // para el pixel actual, computar la dirección que un rayo debe tener
+                Vector cameraRayDir = cx * (double(x) / w - .5) + cy * (double(y) / h - .5) + camera.d;
                 for (int i = 0; i < pixel_samples; i++)
                 {
-                    // auto u = cx * (double(x) / w - .5);
-                    // auto v = cy * (double(y) / h - .5);
-                    // se le agrega un valor aleatorio a cada pixel en X Y para muestrear mas puntos, no solo el centro del pixel
-                    auto u = cx * (double(x + random_double()) / w - 0.5);
-                    auto v = cy * (double(y + random_double()) / h - 0.5);
-                    // se lanza rayo con las variaciones en direccion
-                    Vector cameraRayDir = u + v + camera.d;
-                    // incrementamos valores de ese pixel
-
-                    pixelValue = pixelValue + shade(Ray(camera.o, cameraRayDir.normalize()), depth, mode);
+                    // computar el color del pixel para el punto que intersectó el rayo desde la camara
+                    pixelValue = pixelValue + shade(Ray(camera.o, cameraRayDir.normalize()), depth);
                 }
-                // promedio y escalado del valor del pixel
-                auto scale = 1.0 / pixel_samples;
-                pixelValue = pixelValue * scale;
-
+                pixelValue = pixelValue * (1.0 / pixel_samples);
                 // limitar los tres valores de color del pixel a [0,1]
                 pixelColors[idx] = Color(clamp(pixelValue.x), clamp(pixelValue.y), clamp(pixelValue.z));
             }
