@@ -145,7 +145,7 @@ double fresnel(const double etap, const double kappap, const double cos)
 
     // return (1.0 / 2.0) * (rper + rpar);
 
-    double coste = Clamp(cos, -1.0, 1.0);
+    double coste = clamp(cos, -1.0, 1.0);
 
     double sente = sqrt(1.0 - coste * coste);
     double nksin = etap - kappap - sente * sente;

@@ -155,6 +155,300 @@ Color shade(const Ray &r, int depth)
 }
 
 // funcion principal
+
+// frames 0-24
+//  int main(int argc, char *argv[])
+//  {
+//      int w = 1024, h = 768; // image resolution
+//      // Numero de muestras por pixel.
+//      int pixel_samples = 10;
+
+//     // Numero de rebotes.
+//     const int depth = 10;
+
+//     // fija la posicion de la camara y la dirección en que mira
+//     Ray camera(Point(0, 11.2, 214), Vector(0, -0.042612, -1).normalize());
+
+//     // parametros de la camara
+//     Vector cx = Vector(w * 0.5095 / h, 0., 0.);
+//     Vector cy = (cx % camera.d).normalize() * 0.5095;
+
+//     // auxiliar para valor de pixel y matriz para almacenar la imagen
+//     Color *pixelColors = new Color[w * h];
+
+//     int startFrame = 0;
+//     int endFrame = startFrame + 24;
+//     // int endFrame = startFrame + 0;
+
+//     double lerpX = 0.0;
+//     double lerpY = 0.0;
+//     double lerpZ = 0.0;
+
+//     //-23, -24.3, -34.6-radio
+//     for (int frame = startFrame; frame <= endFrame; frame++)
+//     {
+
+//         cout << "Frame: " << frame << endl;
+//         double time = (double)(frame - startFrame) / (double)(endFrame - startFrame);
+//         //numero de muestras por pixel
+//         pixel_samples = 10;
+
+//         // acercamiento espejo
+//         lerpX = lerp(0, 0, time);
+//         lerpY = lerp(-24.4, 24.4, time);
+//         lerpZ = lerp(0, 0, time);
+//         // mov luz
+//         spheres[7].p = Point(lerpX, lerpY, lerpZ);
+//         cout << "Samples: " << pixel_samples << endl;
+
+//         // imprimimos la posicion de la camara/objetos que estemos moviendo en el frame
+//         cout
+//             << "Pos: " << lerpX << " " << lerpY << " " << lerpZ << endl;
+//         {
+//             // se define bloque paralelo
+// #pragma omp parallel
+//             {
+//                 // siguiente bucle for se ejecuta de manera paralela,
+//                 // asignando un chunk a cada nucleo del CPU disponible en ese momento
+// #pragma omp for schedule(dynamic, 1)
+//                 for (int y = 0; y < h; y++)
+//                 {
+//                     // recorre todos los pixeles de la imagen
+//                     fprintf(stderr, "\r%5.2f%%", 100. * y / (h - 1));
+
+//                     for (int x = 0; x < w; x++)
+//                     {
+//                         int idx = (h - y - 1) * w + x; // index en 1D para una imagen 2D x,y son invertidos
+//                         Color pixelValue = Color();    // pixelValue en negro por ahora
+//                         // para el pixel actual, computar la dirección que un rayo debe tener
+//                         Vector cameraRayDir = cx * (double(x) / w - .5) + cy * (double(y) / h - .5) + camera.d;
+//                         for (int i = 0; i < pixel_samples; i++)
+//                         {
+//                             // computar el color del pixel para el punto que intersectó el rayo desde la camara
+//                             pixelValue = pixelValue + shade(Ray(camera.o, cameraRayDir.normalize()), depth);
+//                         }
+//                         pixelValue = pixelValue * (1.0 / pixel_samples);
+//                         // limitar los tres valores de color del pixel a [0,1]
+//                         pixelColors[idx] = Color(clamp(pixelValue.x), clamp(pixelValue.y), clamp(pixelValue.z));
+//                     }
+//                 }
+//             }
+
+//             fprintf(stderr, "\n");
+//             char filename[50];
+//             // nombre del archivo de salida
+//             sprintf(filename, "frame_%d.ppm", frame);
+//             FILE *f = fopen(filename, "w");
+//             fprintf(f, "P3\n%d %d\n%d\n", w, h, 255);
+//             for (int p = 0; p < w * h; p++)
+//             {
+//                 // escribe todos los valores de los pixeles
+//                 fprintf(f, "%d %d %d ", toDisplayValue(pixelColors[p].x), toDisplayValue(pixelColors[p].y),
+//                         toDisplayValue(pixelColors[p].z));
+//             }
+//             fclose(f);
+//         }
+//     }
+//     delete[] pixelColors;
+//     return 0;
+// }
+
+// frames 25-49
+// int main(int argc, char *argv[])
+// {
+//     int w = 1024, h = 768; // image resolution
+//     // Numero de muestras por pixel.
+//     int pixel_samples = 10;
+
+//     // Numero de rebotes.
+//     const int depth = 10;
+
+//     // fija la posicion de la camara y la dirección en que mira
+//     Ray camera(Point(0, 11.2, 214), Vector(0, -0.042612, -1).normalize());
+
+//     // parametros de la camara
+//     Vector cx = Vector(w * 0.5095 / h, 0., 0.);
+//     Vector cy = (cx % camera.d).normalize() * 0.5095;
+
+//     // auxiliar para valor de pixel y matriz para almacenar la imagen
+//     Color *pixelColors = new Color[w * h];
+
+//     int startFrame = 25;
+//     int endFrame = startFrame + 24;
+//     // int endFrame = startFrame + 0;
+
+//     double lerpX = 0.0;
+//     double lerpY = 0.0;
+//     double lerpZ = 0.0;
+
+//     //-23, -24.3, -34.6-radio
+//     for (int frame = startFrame; frame <= endFrame; frame++)
+//     {
+
+//         cout << "Frame: " << frame << endl;
+//         double time = (double)(frame - startFrame) / (double)(endFrame - startFrame);
+//         // numero de muestras por pixel
+//         pixel_samples = 10;
+
+//         // acercamiento espejo
+//         lerpX = lerp(23, -23, time);
+//         lerpY = lerp(-24.4, -24.4, time);
+//         lerpZ = lerp(-3.6, 3.6, time);
+//         // mov luz
+//         spheres[6].p = Point(lerpX, lerpY, lerpZ);
+//         cout << "Samples: " << pixel_samples << endl;
+
+//         // imprimimos la posicion de la camara/objetos que estemos moviendo en el frame
+//         cout
+//             << "Pos: " << lerpX << " " << lerpY << " " << lerpZ << endl;
+//         {
+//             // se define bloque paralelo
+// #pragma omp parallel
+//             {
+//                 // siguiente bucle for se ejecuta de manera paralela,
+//                 // asignando un chunk a cada nucleo del CPU disponible en ese momento
+// #pragma omp for schedule(dynamic, 1)
+//                 for (int y = 0; y < h; y++)
+//                 {
+//                     // recorre todos los pixeles de la imagen
+//                     fprintf(stderr, "\r%5.2f%%", 100. * y / (h - 1));
+
+//                     for (int x = 0; x < w; x++)
+//                     {
+//                         int idx = (h - y - 1) * w + x; // index en 1D para una imagen 2D x,y son invertidos
+//                         Color pixelValue = Color();    // pixelValue en negro por ahora
+//                         // para el pixel actual, computar la dirección que un rayo debe tener
+//                         Vector cameraRayDir = cx * (double(x) / w - .5) + cy * (double(y) / h - .5) + camera.d;
+//                         for (int i = 0; i < pixel_samples; i++)
+//                         {
+//                             // computar el color del pixel para el punto que intersectó el rayo desde la camara
+//                             pixelValue = pixelValue + shade(Ray(camera.o, cameraRayDir.normalize()), depth);
+//                         }
+//                         pixelValue = pixelValue * (1.0 / pixel_samples);
+//                         // limitar los tres valores de color del pixel a [0,1]
+//                         pixelColors[idx] = Color(clamp(pixelValue.x), clamp(pixelValue.y), clamp(pixelValue.z));
+//                     }
+//                 }
+//             }
+
+//             fprintf(stderr, "\n");
+//             char filename[50];
+//             // nombre del archivo de salida
+//             sprintf(filename, "frame_%d.ppm", frame);
+//             FILE *f = fopen(filename, "w");
+//             fprintf(f, "P3\n%d %d\n%d\n", w, h, 255);
+//             for (int p = 0; p < w * h; p++)
+//             {
+//                 // escribe todos los valores de los pixeles
+//                 fprintf(f, "%d %d %d ", toDisplayValue(pixelColors[p].x), toDisplayValue(pixelColors[p].y),
+//                         toDisplayValue(pixelColors[p].z));
+//             }
+//             fclose(f);
+//         }
+//     }
+//     delete[] pixelColors;
+//     return 0;
+// }
+
+    // frames 50-74
+// int main(int argc, char *argv[])
+// {
+//     int w = 1024, h = 768; // image resolution
+//     // Numero de muestras por pixel.
+//     int pixel_samples = 10;
+
+//     // Numero de rebotes.
+//     const int depth = 10;
+
+//     // fija la posicion de la camara y la dirección en que mira
+//     Ray camera(Point(0, 11.2, 214), Vector(0, -0.042612, -1).normalize());
+
+//     // parametros de la camara
+//     Vector cx = Vector(w * 0.5095 / h, 0., 0.);
+//     Vector cy = (cx % camera.d).normalize() * 0.5095;
+
+//     // auxiliar para valor de pixel y matriz para almacenar la imagen
+//     Color *pixelColors = new Color[w * h];
+
+//     int startFrame = 50;
+//     int endFrame = startFrame + 1;
+//     // int endFrame = startFrame + 0;
+
+//     double lerpX = 0.0;
+//     double lerpY = 0.0;
+//     double lerpZ = 0.0;
+
+//     //-23, -24.3, -34.6-radio
+//     for (int frame = startFrame; frame <= endFrame; frame++)
+//     {
+//         spheres[6].p = Point(-23, -24.3, -3.6);
+//         cout << "Frame: " << frame << endl;
+//         double time = (double)(frame - startFrame) / (double)(endFrame - startFrame);
+//         // numero de muestras por pixel
+//         pixel_samples = 10;
+
+//         // acercamiento espejo
+//         lerpX = lerp(-23, 23, time);
+//         lerpY = lerp(-24.4, -24.4, time);
+//         lerpZ = lerp(-34.6, -34.6, time);
+//         // mov luz
+//         spheres[5].p = Point(lerpX, lerpY, lerpZ);
+//         cout << "Samples: " << pixel_samples << endl;
+
+//         // imprimimos la posicion de la camara/objetos que estemos moviendo en el frame
+//         cout
+//             << "Pos: " << lerpX << " " << lerpY << " " << lerpZ << endl;
+//         {
+//             // se define bloque paralelo
+// #pragma omp parallel
+//             {
+//                 // siguiente bucle for se ejecuta de manera paralela,
+//                 // asignando un chunk a cada nucleo del CPU disponible en ese momento
+// #pragma omp for schedule(dynamic, 1)
+//                 for (int y = 0; y < h; y++)
+//                 {
+//                     // recorre todos los pixeles de la imagen
+//                     fprintf(stderr, "\r%5.2f%%", 100. * y / (h - 1));
+
+//                     for (int x = 0; x < w; x++)
+//                     {
+//                         int idx = (h - y - 1) * w + x; // index en 1D para una imagen 2D x,y son invertidos
+//                         Color pixelValue = Color();    // pixelValue en negro por ahora
+//                         // para el pixel actual, computar la dirección que un rayo debe tener
+//                         Vector cameraRayDir = cx * (double(x) / w - .5) + cy * (double(y) / h - .5) + camera.d;
+//                         for (int i = 0; i < pixel_samples; i++)
+//                         {
+//                             // computar el color del pixel para el punto que intersectó el rayo desde la camara
+//                             pixelValue = pixelValue + shade(Ray(camera.o, cameraRayDir.normalize()), depth);
+//                         }
+//                         pixelValue = pixelValue * (1.0 / pixel_samples);
+//                         // limitar los tres valores de color del pixel a [0,1]
+//                         pixelColors[idx] = Color(clamp(pixelValue.x), clamp(pixelValue.y), clamp(pixelValue.z));
+//                     }
+//                 }
+//             }
+
+//             fprintf(stderr, "\n");
+//             char filename[50];
+//             // nombre del archivo de salida
+//             sprintf(filename, "frame_%d.ppm", frame);
+//             FILE *f = fopen(filename, "w");
+//             fprintf(f, "P3\n%d %d\n%d\n", w, h, 255);
+//             for (int p = 0; p < w * h; p++)
+//             {
+//                 // escribe todos los valores de los pixeles
+//                 fprintf(f, "%d %d %d ", toDisplayValue(pixelColors[p].x), toDisplayValue(pixelColors[p].y),
+//                         toDisplayValue(pixelColors[p].z));
+//             }
+//             fclose(f);
+//         }
+//     }
+//     delete[] pixelColors;
+//     return 0;
+// }
+
+    // frames 75-99
+
 int main(int argc, char *argv[])
 {
     int w = 1024, h = 768; // image resolution
@@ -174,8 +468,8 @@ int main(int argc, char *argv[])
     // auxiliar para valor de pixel y matriz para almacenar la imagen
     Color *pixelColors = new Color[w * h];
 
-    int startFrame = 484;
-    int endFrame = startFrame + 24;
+    int startFrame = 72;
+    int endFrame = startFrame + 1;
     // int endFrame = startFrame + 0;
 
     double lerpX = 0.0;
@@ -185,30 +479,24 @@ int main(int argc, char *argv[])
     //-23, -24.3, -34.6-radio
     for (int frame = startFrame; frame <= endFrame; frame++)
     {
-
         cout << "Frame: " << frame << endl;
         double time = (double)(frame - startFrame) / (double)(endFrame - startFrame);
-
-        // acercamiento glass
-        // lerpX = lerp(23, 4.04, time);
-        // lerpY = lerp(-21, -5.07083, time);
-        // lerpZ = lerp(70, 124.213, time);
-        // pixel_samples = int(lerp(10, 50, time));
-        pixel_samples = 50;
+        // numero de muestras por pixel
+        pixel_samples = 10;
 
         // acercamiento espejo
-        lerpX = lerp(0, 0, time);
-        lerpY = lerp(24, 0, time);
-        lerpZ = lerp(0, 214, time);
-        // centrar camara
-        spheres[7].p = Point(lerpX, lerpY, lerpZ);
-        // camera.o = Point(lerpX, lerpY, lerpZ);
-        // camera.o = Point(-24.3, -24.3, 54.737);
+        lerpX = lerp(-23, 23, time);
+        double lerpX2 = lerp(23, -23, time);
+        lerpY = lerp(-24.4, -24.4, time);
+        lerpZ = lerp(-34.6, -34.6, time);
+        // mov luz
+        spheres[5].p = Point(lerpX, lerpY, lerpZ);
+        spheres[6].p = Point(lerpX2, -24.3, -3.6);
         cout << "Samples: " << pixel_samples << endl;
 
         // imprimimos la posicion de la camara/objetos que estemos moviendo en el frame
         cout
-            << "Pos: " << camera.o.x << " " << camera.o.y << " " << camera.o.z << endl;
+            << "Pos: " << lerpX << " " << lerpY << " " << lerpZ << endl;
         {
             // se define bloque paralelo
 #pragma omp parallel
@@ -257,3 +545,123 @@ int main(int argc, char *argv[])
     delete[] pixelColors;
     return 0;
 }
+
+    // frames 96-120
+    // frames 120-144
+    // frames 144-168
+    // frames 168-192
+    // frames 192-216
+    // frames 216-240
+    // frames 240-264
+    // frames 264-288
+    // frames 288-312
+    // frames 312-336
+    // frames 336-360
+    // frames 360-384
+    // frames 384-408
+    // frames 408-432
+    // frames 432-456
+    // frames 456-480
+    // frames 480-484
+    // frames 484-508
+    // int main(int argc, char *argv[])
+    // {
+    //     int w = 1024, h = 768; // image resolution
+    //     // Numero de muestras por pixel.
+    //     int pixel_samples = 10;
+    //     // Numero de rebotes.
+    //     const int depth = 10;
+
+    //     // fija la posicion de la camara y la dirección en que mira
+    //     Ray camera(Point(0, 11.2, 214), Vector(0, -0.042612, -1).normalize());
+
+    //     // parametros de la camara
+    //     Vector cx = Vector(w * 0.5095 / h, 0., 0.);
+    //     Vector cy = (cx % camera.d).normalize() * 0.5095;
+
+    //     // auxiliar para valor de pixel y matriz para almacenar la imagen
+    //     Color *pixelColors = new Color[w * h];
+
+    //     int startFrame = 484;
+    //     int endFrame = startFrame + 24;
+    //     // int endFrame = startFrame + 0;
+
+    //     double lerpX = 0.0;
+    //     double lerpY = 0.0;
+    //     double lerpZ = 0.0;
+
+    //     //-23, -24.3, -34.6-radio
+    //     for (int frame = startFrame; frame <= endFrame; frame++)
+    //     {
+
+    //         cout << "Frame: " << frame << endl;
+    //         double time = (double)(frame - startFrame) / (double)(endFrame - startFrame);
+
+    //         // acercamiento glass
+    //         // lerpX = lerp(23, 4.04, time);
+    //         // lerpY = lerp(-21, -5.07083, time);
+    //         // lerpZ = lerp(70, 124.213, time);
+    //         // pixel_samples = int(lerp(10, 50, time));
+    //         pixel_samples = 50;
+
+    //         // acercamiento espejo
+    //         lerpX = lerp(0, 0, time);
+    //         lerpY = lerp(24, 0, time);
+    //         lerpZ = lerp(0, 214, time);
+    //         // centrar camara
+    //         spheres[7].p = Point(lerpX, lerpY, lerpZ);
+    //         // camera.o = Point(lerpX, lerpY, lerpZ);
+    //         // camera.o = Point(-24.3, -24.3, 54.737);
+    //         cout << "Samples: " << pixel_samples << endl;
+
+    //         // imprimimos la posicion de la camara/objetos que estemos moviendo en el frame
+    //         cout
+    //             << "Pos: " << camera.o.x << " " << camera.o.y << " " << camera.o.z << endl;
+    //         {
+    //             // se define bloque paralelo
+    // #pragma omp parallel
+    //             {
+    //                 // siguiente bucle for se ejecuta de manera paralela,
+    //                 // asignando un chunk a cada nucleo del CPU disponible en ese momento
+    // #pragma omp for schedule(dynamic, 1)
+    //                 for (int y = 0; y < h; y++)
+    //                 {
+    //                     // recorre todos los pixeles de la imagen
+    //                     fprintf(stderr, "\r%5.2f%%", 100. * y / (h - 1));
+
+    //                     for (int x = 0; x < w; x++)
+    //                     {
+    //                         int idx = (h - y - 1) * w + x; // index en 1D para una imagen 2D x,y son invertidos
+    //                         Color pixelValue = Color();    // pixelValue en negro por ahora
+    //                         // para el pixel actual, computar la dirección que un rayo debe tener
+    //                         Vector cameraRayDir = cx * (double(x) / w - .5) + cy * (double(y) / h - .5) + camera.d;
+    //                         for (int i = 0; i < pixel_samples; i++)
+    //                         {
+    //                             // computar el color del pixel para el punto que intersectó el rayo desde la camara
+    //                             pixelValue = pixelValue + shade(Ray(camera.o, cameraRayDir.normalize()), depth);
+    //                         }
+    //                         pixelValue = pixelValue * (1.0 / pixel_samples);
+    //                         // limitar los tres valores de color del pixel a [0,1]
+    //                         pixelColors[idx] = Color(clamp(pixelValue.x), clamp(pixelValue.y), clamp(pixelValue.z));
+    //                     }
+    //                 }
+    //             }
+
+    //             fprintf(stderr, "\n");
+    //             char filename[50];
+    //             // nombre del archivo de salida
+    //             sprintf(filename, "frame_%d.ppm", frame);
+    //             FILE *f = fopen(filename, "w");
+    //             fprintf(f, "P3\n%d %d\n%d\n", w, h, 255);
+    //             for (int p = 0; p < w * h; p++)
+    //             {
+    //                 // escribe todos los valores de los pixeles
+    //                 fprintf(f, "%d %d %d ", toDisplayValue(pixelColors[p].x), toDisplayValue(pixelColors[p].y),
+    //                         toDisplayValue(pixelColors[p].z));
+    //             }
+    //             fclose(f);
+    //         }
+    //     }
+    //     delete[] pixelColors;
+    //     return 0;
+    // }

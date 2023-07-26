@@ -10,6 +10,6 @@ public:
 
     Point at(double t) const
     {
-        return o + d * t;
+        return o + d * t; 
     }
 };

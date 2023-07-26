@@ -22,6 +22,17 @@ clamp(const double x)
     return x;
 }
 
+//limita el valor entre el rango dado.
+inline double clamp(double val, int low, int high)
+{
+    if (val < low)
+        return low;
+    else if (val > high)
+        return high;
+    else
+        return val;
+}
+
 // convierte un valor de color en [0,1] a un entero en [0,255]
 inline int toDisplayValue(const double x)
 {
