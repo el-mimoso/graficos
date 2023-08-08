@@ -60,7 +60,9 @@ private:
 
 public:
     const static int bytes_per_pixel = 3;
+    //constructor base con valores nulos 
     ImageTexture() : data(nullptr), width(0), height(0), bytes_per_scanline(0) {}
+    //constructor con valores de la imagen
     ImageTexture(const char *filename)
     {
         auto components_per_pixel = bytes_per_pixel;
@@ -76,10 +78,12 @@ public:
 
         bytes_per_scanline = bytes_per_pixel * width;
     }
-    // ~imageTexture(){
-    //     delete data;
-    // }
+    //destructor
+    ~ImageTexture(){
+        delete data;
+    }
 
+    // retorna Color dependiendo de la posicion de la imagen
     virtual Color value(double u, double v, const Vector &p) const override
     {
         // If we have no texture data, then return solid cyan as a debugging aid.

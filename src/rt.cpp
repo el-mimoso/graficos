@@ -5,6 +5,7 @@
 #include "sphere.h"
 #include "utils.h"
 #include "texture.h"
+#include "sky.h"
 
 #include <math.h>
 #include <stdlib.h>
@@ -15,7 +16,7 @@
 
 using namespace std;
 
-// colores Texturas
+// colores y Texturas
 SolidColor red(Color(0.75, 0.25, 0.25));
 SolidColor white(Color(0.75, 0.75, 0.75));
 SolidColor green(Color(0.25, 0.75, 0.25));
@@ -30,16 +31,24 @@ ImageTexture golfNormals("assets/golfNormals.jpg");
 ImageTexture rockAlbedo("assets/rock_albedo.jpeg");
 ImageTexture rockNormals("assets/rockNormals.jpeg");
 
+ImageTexture brickAlbedo("assets/brick_albedo.jpeg");
+ImageTexture brickNormals("assets/brickNormals.jpeg");
+
+AmbientMap skybox("assets/grass.hdr");
+// AmbientMap skybox("assets/cafe.hdr");
 // materiales para la escena
 
 DifusseOG m1(Color(0.75, 0.25, 0.25), Color()); // pared izq
 DifusseOG m2(Color(0.25, 0.25, 0.75), Color()); // pared der
 DifusseOG m3(Color(0.25, 0.75, 0.25), Color()); // pared detras
 // DifusseOG m4(Color(0.25, 0.75, 0.75), Color()); // suelo
-DifusseTx m4(&white);   // suelo
-DifusseOG m5(Color(0.75, 0.75, 0.25), Color());           // techo
-DifusseTx m6(&rockAlbedo, &rockNormals);                       // esfera abajo-izq
-DifusseTx m7(&white, &golfNormals);           // esfera abajo-der
+DifusseTx m4(&white);                           // suelo
+DifusseOG m5(Color(0.75, 0.75, 0.25), Color()); // techo
+DifusseTx m6(&rockAlbedo, &rockNormals);        // esfera abajo-izq
+// DifusseTx m7(&white, &golfNormals);           // esfera abajo-der
+// Specular m7(Color(0.999, 0.999, 0.999), Color()); // esfera abajo-der
+Metal m7(Color(0.143245, 0.377423, 1.43919), Color(3.98479, 2.3847, 1.60434), 0.3); // esfera abajo-der
+// DifusseTx m7(&brickAlbedo, &brickNormals);                // esfera abajo-der
 DifusseOG m8(Color(1.00, 1.00, 1.00), Color(10, 10, 10)); // esfera arriba LUZ
 
 Sphere spheres[] = {
@@ -99,6 +108,7 @@ Color shade(const Ray &r, int depth)
 
     if (!intersect(r, t, id))
         // el rayo no intersecto objeto, return Vector() == negro
+        // return skybox.value(r);
         return Color(0, 0, 0);
 
     const Sphere &obj = spheres[id];
@@ -129,7 +139,7 @@ Color shade(const Ray &r, int depth)
     double tetha;
 
     wo = material->sampling(r, info);
-    p = material->probability(info);
+    p = material->probability(r, wo, info);
     // direccion saliente
     Ray newRay(x, wo);
     double cos_theta = newRay.d.dot(n);
@@ -140,7 +150,7 @@ Color shade(const Ray &r, int depth)
     {
         Vector wr;
         wr = material->sampling(r, info);
-        p = material->probability(info);
+        p = material->probability(r, wo, info);
         newRay = Ray(x, wr);
         BRDF = material->eval_f(r, newRay, info);
         cos_theta = newRay.d.dot(n);
@@ -152,7 +162,7 @@ Color shade(const Ray &r, int depth)
         Vector wrt;
         // Se mandan los valores de n y nv para que se haga la reflexion interna
         wrt = material->sampling(r, info);
-        p = material->probability(info);
+        p = material->probability(r, wo, info);
         // direccion del nuevo rayo
         newRay = Ray(x, wrt);
         // cout<<wrt.x<<" "<<wrt.y<<" "<<wrt.z<<endl;
@@ -160,6 +170,17 @@ Color shade(const Ray &r, int depth)
         BRDF = material->eval_f(r, newRay, info);
         return BRDF.mult(shade(newRay, depth - 1));
     }
+    // if (typeid(*material) == typeid(Metal))
+    // {
+    //     wo = material->sampling(r, info);
+    //     // cout<<wo.x<<" "<<wo.y<<" "<<wo.z<<endl;
+    //     p = material->probability(r, wo, info);
+    //     Ray newRay(x, wo);
+    //     double cos_theta = newRay.d.dot(n);
+    //     Color BRDF = material->eval_f(r, newRay, info);
+    //     // cout<<p<<endl;
+    //     return BRDF.mult(shade(newRay, depth - 1)) * ( p);
+    // }
 
     Color incomingColor = shade(newRay, depth - 1);
     Color colorvalue = (incomingColor.mult(BRDF) * (fabs(cos_theta) / p));
@@ -171,9 +192,11 @@ int main(int argc, char *argv[])
 {
     int w = 1024, h = 768; // image resolution
     // Numero de muestras por pixel.
-    const int pixel_samples = 100;
+    const int pixel_samples = 32;
     // Numero de rebotes.
     const int depth = 3;
+    // super sampling
+    const int ssa = 4;
 
     // fija la posicion de la camara y la dirección en que mira
     Ray camera(Point(0, 11.2, 214), Vector(0, -0.042612, -1).normalize());
@@ -204,10 +227,20 @@ int main(int argc, char *argv[])
                 Vector cameraRayDir = cx * (double(x) / w - .5) + cy * (double(y) / h - .5) + camera.d;
                 for (int i = 0; i < pixel_samples; i++)
                 {
+                    // super sampling
+                    for (int j = 0; j < ssa; j++)
+                    {
+                        auto u = cx * (double(x + random_double(-.5, .5)) / w - 0.5);
+                        auto v = cy * (double(y + random_double(-.5, .5)) / h - 0.5);
+                        // se lanza rayo con las variaciones en direccion
+                        Vector cameraRayDir = u + v + camera.d;
+                        // incrementamos valores de ese pixel
+                        pixelValue = pixelValue + shade(Ray(camera.o, cameraRayDir.normalize()), depth);
+                    }
                     // computar el color del pixel para el punto que intersectó el rayo desde la camara
-                    pixelValue = pixelValue + shade(Ray(camera.o, cameraRayDir.normalize()), depth);
+                    // pixelValue = pixelValue + shade(Ray(camera.o, cameraRayDir.normalize()), depth);
                 }
-                pixelValue = pixelValue * (1.0 / pixel_samples);
+                pixelValue = pixelValue * (1.0 / (pixel_samples * ssa));
                 // limitar los tres valores de color del pixel a [0,1]
                 pixelColors[idx] = Color(clamp(pixelValue.x), clamp(pixelValue.y), clamp(pixelValue.z));
             }

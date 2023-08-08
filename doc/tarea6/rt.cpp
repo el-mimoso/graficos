@@ -27,7 +27,7 @@ Specular m6(Color(1, 1, 1), Color()); // esfera abajo-izq Espejo
 // DifusseON m6(Color(.2, .3, .4), Color(), 0.5); // esfera abajo-izq Diffuso Oren-Nayar
 // DifusseOG m7(Color(.4, .3, .2), Color()); // esfera abajo-der Diffuso OG
 // DifusseON m7(Color(.4, .3, .2), Color(), 0.5); // esfera abajo-der Diffuso Oren-Nayar
-Metal m7(Color(0.143245, 0.377423, 1.43919),Color(3.98479, 2.3847,1.60434), 0.5); // esfera abajo-der metalica oro
+Metal m7(Color(0.143245, 0.377423, 1.43919),Color(3.98479, 2.3847,1.60434), 0.3); // esfera abajo-der metalica oro
 
 DifusseOG m8(Color(1, 1, 1), Color(10, 10, 10)); // esfera arriba
 
@@ -152,7 +152,7 @@ int main(int argc, char *argv[])
 {
     int w = 1024, h = 768; // image resolution
     // Numero de muestras por pixel.
-    const int pixel_samples = 100;
+    const int pixel_samples = 32;
     // Numero de rebotes.
     const int depth = 10;
 

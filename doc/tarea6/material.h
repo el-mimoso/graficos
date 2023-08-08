@@ -129,39 +129,39 @@ Vector reflect(const Ray r, Vector N)
 }
 double fresnel(const double etap, const double kappap, const double cos)
 {
-    // double sente = sin(acos(cos));
-    // double nksin = etap - kappap - sente * sente;
-
-    // double ab = sqrt(nksin * nksin + etap * kappap * 4.0);
-    // double a = sqrt((ab + nksin) / 2.0);
-
-    // double rpernum = ab + cos * cos - 2.0 * a * cos;
-    // double rperdem = ab + cos * cos + 2.0 * a * cos;
-    // double rper = rpernum / rperdem;
-
-    // double rparnum = ab * cos * cos + sente * sente * sente * sente - 2.0 * a * cos * sente * sente;
-    // double rpardem = ab * cos * cos + sente * sente * sente * sente + 2.0 * a * cos * sente * sente;
-    // double rpar = rper * rparnum / rpardem;
-
-    // return (1.0 / 2.0) * (rper + rpar);
-
-    double coste = clamp(cos, -1.0, 1.0);
-
-    double sente = sqrt(1.0 - coste * coste);
+    double sente = sin(acos(cos));
     double nksin = etap - kappap - sente * sente;
 
     double ab = sqrt(nksin * nksin + etap * kappap * 4.0);
-    double a = sqrt((ab + nksin) * 0.5);
+    double a = sqrt((ab + nksin) / 2.0);
 
-    double rpernum = ab + coste * coste - 2.0 * a * coste;
-    double rperdem = ab + coste * coste + 2.0 * a * coste;
+    double rpernum = ab + cos * cos - 2.0 * a * cos;
+    double rperdem = ab + cos * cos + 2.0 * a * cos;
     double rper = rpernum / rperdem;
 
-    double rparnum = ab * coste * coste + sente * sente * sente * sente - 2.0 * a * coste * sente * sente;
-    double rpardem = ab * coste * coste + sente * sente * sente * sente + 2.0 * a * coste * sente * sente;
-    double rpar = rper * (rparnum / rpardem);
+    double rparnum = ab * cos * cos + sente * sente * sente * sente - 2.0 * a * cos * sente * sente;
+    double rpardem = ab * cos * cos + sente * sente * sente * sente + 2.0 * a * cos * sente * sente;
+    double rpar = rper * rparnum / rpardem;
 
-    return (0.5) * (rper + rpar);
+    return (1.0 / 2.0) * (rper + rpar);
+
+    // double coste = clamp(cos, -1.0, 1.0);
+
+    // double sente = sqrt(1.0 - coste * coste);
+    // double nksin = etap - kappap - sente * sente;
+
+    // double ab = sqrt(nksin * nksin + etap * kappap * 4.0);
+    // double a = sqrt((ab + nksin) * 0.5);
+
+    // double rpernum = ab + coste * coste - 2.0 * a * coste;
+    // double rperdem = ab + coste * coste + 2.0 * a * coste;
+    // double rper = rpernum / rperdem;
+
+    // double rparnum = ab * coste * coste + sente * sente * sente * sente - 2.0 * a * coste * sente * sente;
+    // double rpardem = ab * coste * coste + sente * sente * sente * sente + 2.0 * a * coste * sente * sente;
+    // double rpar = rper * (rparnum / rpardem);
+
+    // return (0.5) * (rper + rpar);
 };
 
 class Specular : public Material
@@ -203,7 +203,7 @@ private:
     Vector wo;
 
 public:
-    Metal(Color _eta, Color _kappa, double _alpha) : eta(_eta), kappa(_kappa), alpha(_alpha){};
+    Metal(Color _eta, Color _kappa, double _alpha) : eta(_eta.mult(_eta)), kappa(_kappa.mult(kappa)), alpha(_alpha){};
     virtual double probability() override
     {
         double cos_H = n.dot(wh);
@@ -268,7 +268,7 @@ public:
         double r2 = random_double();
 
         double theta = atan(sqrt(-alpha * alpha * log10(1.0 - r1)));
-        double phi = 2.0 * pi * r1;
+        double phi = 2.0 * pi * r2;
 
         double x = sin(theta) * cos(phi);
         double y = sin(theta) * sin(phi);
